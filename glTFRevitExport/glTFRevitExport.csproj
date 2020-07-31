@@ -185,9 +185,9 @@
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="glTFRevitExport.addin">
+    <!-- <Content Include="glTFRevitExport.addin">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    </Content> -->
     <EmbeddedResource Include="Embedded Media\small.png" />
     <EmbeddedResource Include="Embedded Media\large.png" />
   </ItemGroup>
