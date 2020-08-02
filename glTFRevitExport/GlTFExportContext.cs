@@ -246,7 +246,7 @@ namespace glTFRevitExport
             }
             else
             {
-                string uniqueId = Guid.NewGuid().ToString();
+                uniqueId = Guid.NewGuid().ToString();
                 matName = string.Format("MaterialNode_{0}_{1}", Util.ColorToInt(matNode.Color), Util.RealString(matNode.Transparency * 100));
             }
 
