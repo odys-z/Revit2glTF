@@ -228,7 +228,7 @@ namespace glTFRevitExport
             IList<Parameter> parameters
               = e.GetOrderedParameters();
 
-            Dictionary<string, string> a = new Dictionary<string, string>(parameters.Count);
+            Dictionary<string, string> a = new Dictionary<string, string>();
 
             // Add element category
             if (e.Category != null)
@@ -258,6 +258,18 @@ namespace glTFRevitExport
                         a.Add(key, val);
                     }
                 }
+            }
+
+            // add bounding box info
+            try {
+                BoundingBoxXYZ box = e.get_BoundingBox(null);
+
+                a.Add("Bounding Box Center", PointString(box.Max + box.Min / 2));
+                a.Add("Bounding Box Scale", PointString(box.Max - box.Min));
+
+            }
+            catch (Exception) {
+                // do nothing
             }
 
             if (includeType)
