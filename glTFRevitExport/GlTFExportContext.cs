@@ -237,10 +237,9 @@ namespace glTFRevitExport
             string matName;
             string uniqueId;
 
-            ElementId id = matNode.MaterialId;
-            if (id != ElementId.InvalidElementId)
+            Element m = _doc.GetElement(matNode.MaterialId);
+            if (m != null)
             {
-                Element m = _doc.GetElement(matNode.MaterialId);
                 matName = m.Name;
                 uniqueId = m.UniqueId;
             }
