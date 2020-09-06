@@ -417,27 +417,23 @@ namespace glTFRevitExport
                 mesh.primitives.Add(primative);
             }
 
-            // glTF entity can not be empty
-            if (mesh.primitives.Count() > 0) {
-                // Prevent mesh duplication by hash checking
-                string meshHash = ManagerUtils.GenerateSHA256Hash(mesh);
-                ManagerUtils.HashSearch hs = new ManagerUtils.HashSearch(meshHash);
-                int idx = meshContainers.FindIndex(hs.EqualTo);
+            // Prevent mesh duplication by hash checking
+            string meshHash = ManagerUtils.GenerateSHA256Hash(mesh);
+            ManagerUtils.HashSearch hs = new ManagerUtils.HashSearch(meshHash);
+            int idx = meshContainers.FindIndex(hs.EqualTo);
 
-                if (idx != -1) {
-                    // set the current nodes mesh index to the already
-                    // created mesh location.
-                    nodeDict[currentNodeId].mesh = idx;
-                }
-                else {
-                    // create new mesh and add it's index to the current node.
-                    MeshContainer mc = new MeshContainer();
-                    mc.hashcode = meshHash;
-                    mc.contents = mesh;
-                    meshContainers.Add(mc);
-                    nodeDict[currentNodeId].mesh = meshContainers.Count - 1;
-                }
-
+            if (idx != -1) {
+                // set the current nodes mesh index to the already
+                // created mesh location.
+                nodeDict[currentNodeId].mesh = idx;
+            }
+            else {
+                // create new mesh and add it's index to the current node.
+                MeshContainer mc = new MeshContainer();
+                mc.hashcode = meshHash;
+                mc.contents = mesh;
+                meshContainers.Add(mc);
+                nodeDict[currentNodeId].mesh = meshContainers.Count - 1;
             }
 
             geometryStack.Pop();
