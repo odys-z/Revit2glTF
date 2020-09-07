@@ -8,13 +8,11 @@ using System.Security.Cryptography;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
 using System.Diagnostics;
+using System.Windows.Markup;
 
-namespace glTFRevitExport
-{
-    static class ManagerUtils
-    {
-        static public List<double> ConvertXForm(Transform xform)
-        {
+namespace glTFRevitExport {
+    static class ManagerUtils {
+        static public List<double> ConvertXForm(Transform xform) {
             if (xform == null || xform.IsIdentity) return null;
 
             var BasisX = xform.BasisX;
@@ -35,33 +33,27 @@ namespace glTFRevitExport
             return glXform;
         }
 
-        public class HashSearch
-        {
+        public class HashSearch {
             string _S;
-            public HashSearch(string s)
-            {
+            public HashSearch(string s) {
                 _S = s;
             }
-            public bool EqualTo(HashedType d)
-            {
+            public bool EqualTo(HashedType d) {
                 return d.hashcode.Equals(_S);
             }
         }
 
-        static public string GenerateSHA256Hash<T>(T data)
-        {
+        static public string GenerateSHA256Hash<T>(T data) {
             var binFormatter = new BinaryFormatter();
             var mStream = new MemoryStream();
             binFormatter.Serialize(mStream, data);
 
-            using (SHA256 hasher = SHA256.Create())
-            {
+            using (SHA256 hasher = SHA256.Create()) {
                 mStream.Position = 0;
                 byte[] byteHash = hasher.ComputeHash(mStream);
 
                 var sBuilder = new StringBuilder();
-                for (int i = 0; i < byteHash.Length; i++)
-                {
+                for (int i = 0; i < byteHash.Length; i++) {
                     sBuilder.Append(byteHash[i].ToString("x2"));
                 }
 
@@ -70,8 +62,7 @@ namespace glTFRevitExport
         }
     }
 
-    class GLTFManager
-    {
+    class GLTFManager {
 
         /// <summary>
         /// Flag to write coords as Z up instead of Y up (if true).
@@ -139,8 +130,7 @@ namespace glTFRevitExport
         /// </summary>
         /// <param name="uniqueId"></param>
         /// <returns></returns>
-        public bool containsNode(string uniqueId)
-        {
+        public bool containsNode(string uniqueId) {
             return nodeDict.ContainsKey(uniqueId);
         }
 
@@ -195,25 +185,20 @@ namespace glTFRevitExport
         /// Returns proper tab alignment for displaying element
         /// hierarchy in debug printing.
         /// </summary>
-        public string formatDebugHeirarchy
-        {
-            get
-            {
+        public string formatDebugHeirarchy {
+            get {
                 string spaces = "";
-                for (int i = 0; i < parentStack.Count; i++)
-                {
+                for (int i = 0; i < parentStack.Count; i++) {
                     spaces += "  ";
                 }
                 return spaces;
             }
         }
 
-        public void Start(bool exportProperties = true)
-        {
+        public void Start(bool exportProperties = true) {
             this._exportProperties = exportProperties;
 
-            Node rootNode = new Node(0);
-            rootNode.children = new List<int>();
+            RootNode rootNode = new RootNode();
             nodeDict.Add(rootNode.id, rootNode);
             parentStack.Push(rootNode.id);
 
@@ -222,8 +207,7 @@ namespace glTFRevitExport
             scenes.Add(defaultScene);
         }
 
-        public glTFContainer Finish()
-        {
+        public glTFContainer Finish() {
             glTF model = new glTF();
             model.asset = new glTFVersion();
             model.scenes = scenes;
@@ -241,8 +225,7 @@ namespace glTFRevitExport
             return container;
         }
 
-        public void OpenNode(Element elem, Transform xform = null, bool isInstance = false)
-        {
+        public void OpenNode(Element elem, Transform xform = null, bool isInstance = false) {
             //// TODO: [RM] Commented out because this is likely to be very buggy and not the 
             //// correct solution intent is to prevent creation of new nodes when a symbol 
             //// is a child of an instance of the same type.
@@ -269,17 +252,14 @@ namespace glTFRevitExport
 
             Node node = new Node(elem, nodeDict.Count, exportNodeProperties, isInstance, formatDebugHeirarchy);
 
-            if (parentStack.Count > 0)
-            {
+            if (parentStack.Count > 0) {
                 string parentId = parentStack.Peek();
                 Node parentNode = nodeDict[parentId];
-                if (parentNode.children == null) parentNode.children = new List<int>();
-                nodeDict[parentId].children.Add(node.index);
+                parentNode.AddChild(node);
             }
 
             parentStack.Push(node.id);
-            if (xform != null)
-            {
+            if (xform != null) {
                 node.matrix = ManagerUtils.ConvertXForm(xform);
             }
 
@@ -289,8 +269,7 @@ namespace glTFRevitExport
             Debug.WriteLine(String.Format("{0}Node Open", formatDebugHeirarchy));
         }
 
-        public void CloseNode(Element elem = null, bool isInstance = false)
-        {
+        public void CloseNode(Element elem = null, bool isInstance = false) {
             //// TODO: [RM] Commented out because this is likely to be very buggy and not the 
             //// correct solution intent is to prevent creation of new nodes when a symbol 
             //// is a child of an instance of the same type.
@@ -312,8 +291,7 @@ namespace glTFRevitExport
 
             Debug.WriteLine(String.Format("{0}Closing Node", formatDebugHeirarchy));
 
-            if (currentGeom != null)
-            {
+            if (currentGeom != null) {
                 CloseGeometry();
             }
 
@@ -321,8 +299,7 @@ namespace glTFRevitExport
             parentStack.Pop();
         }
 
-        public void SwitchMaterial(MaterialNode matNode, string name = null, string id = null)
-        {
+        public void SwitchMaterial(MaterialNode matNode, string name = null, string id = null) {
             glTFMaterial gl_mat = new glTFMaterial();
             gl_mat.name = name;
 
@@ -340,25 +317,21 @@ namespace glTFRevitExport
             materialDict.AddOrUpdateCurrent(id, gl_mat);
         }
 
-        public void OpenGeometry()
-        {
+        public void OpenGeometry() {
             geometryStack.Push(new Dictionary<string, GeometryData>());
         }
 
-        public void OnGeometry(PolymeshTopology polymesh)
-        {
+        public void OnGeometry(PolymeshTopology polymesh) {
             if (currentNodeId == null) throw new Exception();
 
             string vertex_key = currentNodeId + "_" + materialDict.CurrentKey;
-            if (currentGeom.ContainsKey(vertex_key) == false)
-            {
+            if (currentGeom.ContainsKey(vertex_key) == false) {
                 currentGeom.Add(vertex_key, new GeometryData());
             }
 
             // Populate normals from this polymesh
             IList<XYZ> norms = polymesh.GetNormals();
-            foreach (XYZ norm in norms)
-            {
+            foreach (XYZ norm in norms) {
                 currentGeom[vertex_key].normals.Add(norm.X);
                 currentGeom[vertex_key].normals.Add(norm.Y);
                 currentGeom[vertex_key].normals.Add(norm.Z);
@@ -366,8 +339,7 @@ namespace glTFRevitExport
 
             // Populate vertex and faces data
             IList<XYZ> pts = polymesh.GetPoints();
-            foreach (PolymeshFacet facet in polymesh.GetFacets())
-            {
+            foreach (PolymeshFacet facet in polymesh.GetFacets()) {
                 int v1 = currentGeom[vertex_key].vertDictionary.AddVertex(new PointInt(pts[facet.V1], _flipCoords));
                 int v2 = currentGeom[vertex_key].vertDictionary.AddVertex(new PointInt(pts[facet.V2], _flipCoords));
                 int v3 = currentGeom[vertex_key].vertDictionary.AddVertex(new PointInt(pts[facet.V3], _flipCoords));
@@ -378,20 +350,17 @@ namespace glTFRevitExport
             }
         }
 
-        public void CloseGeometry()
-        {
+        public void CloseGeometry() {
             Debug.WriteLine(String.Format("{0}  Closing Geometry", formatDebugHeirarchy));
             // Create the new mesh and populate the primitives with GeometryData
             glTFMesh mesh = new glTFMesh();
             mesh.primitives = new List<glTFMeshPrimitive>();
 
             // transfer ordered vertices from vertex dictionary to vertices list
-            foreach (KeyValuePair<string,GeometryData> key_geom in currentGeom)
-            {
+            foreach (KeyValuePair<string, GeometryData> key_geom in currentGeom) {
                 string key = key_geom.Key;
                 GeometryData geom = key_geom.Value;
-                foreach (KeyValuePair<PointInt, int> point_index in geom.vertDictionary)
-                {
+                foreach (KeyValuePair<PointInt, int> point_index in geom.vertDictionary) {
                     PointInt point = point_index.Key;
                     geom.vertices.Add(point.X);
                     geom.vertices.Add(point.Y);
@@ -402,8 +371,7 @@ namespace glTFRevitExport
                 string material_key = key.Split('_')[1];
 
                 glTFBinaryData bufferMeta = processGeometry(geom, key);
-                if (bufferMeta.hashcode != null)
-                {
+                if (bufferMeta.hashcode != null) {
                     binaryFileData.Add(bufferMeta);
                 }
 
@@ -447,19 +415,16 @@ namespace glTFRevitExport
         /// <param name="geomData"></param>
         /// <param name="name">Unique name for the .bin file that will be produced.</param>
         /// <returns></returns>
-        private glTFBinaryData processGeometry(GeometryData geom, string name)
-        {
+        private glTFBinaryData processGeometry(GeometryData geom, string name) {
             // TODO: rename this type to glTFBufferMeta ?
             glTFBinaryData bufferData = new glTFBinaryData();
             glTFBinaryBufferContents bufferContents = new glTFBinaryBufferContents();
 
-            foreach (var coord in geom.vertices)
-            {
+            foreach (var coord in geom.vertices) {
                 float vFloat = Convert.ToSingle(coord);
                 bufferContents.vertexBuffer.Add(vFloat);
             }
-            foreach (var index in geom.faces)
-            {
+            foreach (var index in geom.faces) {
                 bufferContents.indexBuffer.Add(index);
             }
 
@@ -468,15 +433,13 @@ namespace glTFRevitExport
             ManagerUtils.HashSearch hs = new ManagerUtils.HashSearch(calculatedHash);
             var match = binaryFileData.Find(hs.EqualTo);
 
-            if (match != null)
-            {
+            if (match != null) {
                 // return previously created buffer metadata
                 bufferData.vertexAccessorIndex = match.vertexAccessorIndex;
                 bufferData.indexAccessorIndex = match.indexAccessorIndex;
                 return bufferData;
             }
-            else
-            {
+            else {
                 // add a buffer
                 glTFBuffer buffer = new glTFBuffer();
                 buffer.uri = name + ".bin";
@@ -584,45 +547,38 @@ namespace glTFRevitExport
         }
     }
 
-    class Node : glTFNode
-    {
+    class Node : glTFNode {
         public int index;
         public string id;
         public bool isFinalized = false;
         public Element element;
+        public BoundingBoxXYZ BBox = null;
 
-        public Node(Element elem, int index, bool exportProperties = true, bool isInstance = false, string heirarchyFormat = "")
-        {
+        public Node(Element elem, int index, bool exportProperties = true, bool isInstance = false, string heirarchyFormat = "") {
             Debug.WriteLine(String.Format("{1}  Creating new node: {0}", elem, heirarchyFormat));
 
+            this.index = index;
+
             this.element = elem;
-            this.name = Util.ElementDescription(elem);
-            this.id = isInstance ? elem.UniqueId + "::" + Guid.NewGuid().ToString() : elem.UniqueId;
-            this.index = index;
-            Debug.WriteLine(String.Format("{1}    Name:{0}", this.name, heirarchyFormat));
+            if (this.element != null) {
+                this.name = Util.ElementDescription(elem);
+                this.id = isInstance ? elem.UniqueId + "::" + Guid.NewGuid().ToString() : elem.UniqueId;
+                Debug.WriteLine(String.Format("{1}    Name:{0}", this.name, heirarchyFormat));
 
-            if (exportProperties)
-            {
-                // get the extras for this element
-                glTFExtras extras = new glTFExtras();
-                extras.UniqueId = elem.UniqueId;
-
-                //var properties = Util.GetElementProperties(elem, true);
-                //if (properties != null) extras.Properties = properties;
-                extras.Properties = Util.GetElementProperties(elem, true);
-                this.extras = extras;
+                if (exportProperties) {
+                    // get the extras for this element
+                    _ensureExtras();
+                    
+                    extras.UniqueId = elem.UniqueId;
+                    extras.Properties = Util.GetElementProperties(elem, true);
+                    _updateBoundingBox();
+    
+                    Debug.WriteLine(String.Format("{0}    Exported Properties", heirarchyFormat));
+                }
             }
-            Debug.WriteLine(String.Format("{0}    Exported Properties", heirarchyFormat));
-        }
-        public Node(int index)
-        {
-            this.name = "::rootNode::";
-            this.id = System.Guid.NewGuid().ToString();
-            this.index = index;
         }
 
-        public glTFNode ToGLTFNode()
-        {
+        public glTFNode ToGLTFNode() {
             glTFNode node = new glTFNode();
             node.name = this.name;
             node.mesh = this.mesh;
@@ -630,6 +586,63 @@ namespace glTFRevitExport
             node.extras = this.extras;
             node.children = this.children;
             return node;
+        }
+
+        public int AddChild(Node childNode) {
+            _ensureChildren();
+            this.children.Add(childNode.index);
+            _updateBoundingBox(childNode);
+            return this.children.Count();
+        }
+
+        private void _updateBoundingBox(Node childNode = null) {
+            _ensureExtrasProps();
+            // add bounding box info
+            try {
+                BoundingBoxXYZ bbox;
+                if (BBox is null) {
+                    if (this.element is null) {
+                        bbox = new BoundingBoxXYZ();
+                        bbox.Min = bbox.Max = new XYZ(0.0, 0.0, 0.0);
+                    }
+                    else
+                        bbox = this.element.get_BoundingBox(null);
+
+                    BBox = bbox;
+                }
+
+                if (childNode != null && childNode.BBox != null)
+                    BBox.ExpandTo(childNode.BBox);
+                
+                this.extras.Properties["Bounding Box Min"] = Util.PointString(BBox.Min);
+                this.extras.Properties["Bounding Box Max"] = Util.PointString(BBox.Max);
+            }
+            catch (Exception ex) {
+                this.extras.Properties["Error"] = ex.Message;
+            }
+        }
+
+        private void _ensureChildren() {
+            if (this.children is null)
+                this.children = new List<int>();
+        }
+
+        private void _ensureExtras() {
+            if (this.extras is null)
+                this.extras = new glTFExtras();
+        }
+
+        private void _ensureExtrasProps() {
+            _ensureExtras();
+            if (this.extras.Properties is null)
+                this.extras.Properties = new Dictionary<string, string>();
+        }
+    }
+
+    class RootNode : Node {
+        public RootNode() : base(null, 0) {
+            this.name = "::rootNode::";
+            this.id = System.Guid.NewGuid().ToString();
         }
     }
 }

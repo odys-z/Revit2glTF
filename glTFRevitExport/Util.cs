@@ -213,8 +213,7 @@ namespace glTFRevitExport
                 a.Add("Element Category", e.Category.Name);
             }
 
-
-
+            // add element parameters
             foreach (Parameter p in parameters) {
                 string key = p.Definition.Name;
 
@@ -232,18 +231,7 @@ namespace glTFRevitExport
                 }
             }
 
-            // add bounding box info
-            try {
-                BoundingBoxXYZ box = e.get_BoundingBox(null);
-
-                a.Add("Bounding Box Center", PointString(box.Max + box.Min / 2));
-                a.Add("Bounding Box Scale", PointString(box.Max - box.Min));
-
-            }
-            catch (Exception) {
-                // do nothing
-            }
-
+            // add type parameters if requested
             if (includeType) {
                 ElementId idType = e.GetTypeId();
 
@@ -284,5 +272,25 @@ namespace glTFRevitExport
                 return original.ToString();
             }
         }
+
+        /// <summary>
+        /// Expand bounding box to contain 
+        /// the given new point.
+        /// </summary>
+        public static void ExpandTo(this BoundingBoxXYZ self, BoundingBoxXYZ right) {
+            XYZ min = new XYZ(
+                x: right.Min.X < self.Min.X ? right.Min.X : self.Min.X,
+                y: right.Min.Y < self.Min.Y ? right.Min.Y : self.Min.Y,
+                z: right.Min.Z < self.Min.Z ? right.Min.Z : self.Min.Z
+                );
+            XYZ max = new XYZ(
+                x: right.Max.X > self.Max.X ? right.Max.X : self.Max.X,
+                y: right.Max.Y > self.Max.Y ? right.Max.Y : self.Max.Y,
+                z: right.Max.Z > self.Max.Z ? right.Max.Z : self.Max.Z
+                );
+            self.Min = min;
+            self.Max = max;
+        }
+
     }
 }
