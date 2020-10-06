@@ -198,12 +198,14 @@ namespace glTFRevitExport {
         public void Start(bool exportProperties = true) {
             this._exportProperties = exportProperties;
 
+            // first node
             RootNode rootNode = new RootNode();
             nodeDict.Add(rootNode.id, rootNode);
             parentStack.Push(rootNode.id);
 
+            // first scene
             glTFScene defaultScene = new glTFScene();
-            defaultScene.nodes.Add(0);
+            defaultScene.nodes.Add(rootNode.index);
             scenes.Add(defaultScene);
         }
 
@@ -247,10 +249,13 @@ namespace glTFRevitExport {
             //    //nodeDict[currentNodeId].matrix = ManagerUtils.ConvertXForm(xform);
             //    //return;
             //}
-            bool exportNodeProperties = _exportProperties;
-            if (isInstance == true && elem is FamilySymbol) exportNodeProperties = false;
 
-            Node node = new Node(elem, nodeDict.Count, exportNodeProperties, isInstance, formatDebugHeirarchy);
+            bool exportNodeProperties = _exportProperties;
+            if (isInstance == true && elem is FamilySymbol)
+                exportNodeProperties = false;
+
+            // always export properties for now
+            Node node = new Node(elem, nodeDict.Count, true, true, formatDebugHeirarchy);
 
             if (parentStack.Count > 0) {
                 string parentId = parentStack.Peek();
@@ -267,6 +272,10 @@ namespace glTFRevitExport {
 
             OpenGeometry();
             Debug.WriteLine(String.Format("{0}Node Open", formatDebugHeirarchy));
+        }
+
+        public void UpdateNodeTransform(Transform xform) {
+            nodeDict[currentNodeId].matrix = ManagerUtils.ConvertXForm(xform);
         }
 
         public void CloseNode(Element elem = null, bool isInstance = false) {
@@ -568,11 +577,11 @@ namespace glTFRevitExport {
                 if (exportProperties) {
                     // get the extras for this element
                     _ensureExtras();
-                    
+
                     extras.UniqueId = elem.UniqueId;
                     extras.Properties = Util.GetElementProperties(elem, true);
                     _updateBoundingBox();
-    
+
                     Debug.WriteLine(String.Format("{0}    Exported Properties", heirarchyFormat));
                 }
             }
@@ -599,23 +608,23 @@ namespace glTFRevitExport {
             _ensureExtrasProps();
             // add bounding box info
             try {
-                BoundingBoxXYZ bbox;
-                if (BBox is null) {
-                    if (this.element is null) {
-                        bbox = new BoundingBoxXYZ();
-                        bbox.Min = bbox.Max = new XYZ(0.0, 0.0, 0.0);
-                    }
-                    else
-                        bbox = this.element.get_BoundingBox(null);
+                // get the bbox from wrapped element is it exists
+                if (BBox is null && this.element != null)
+                    BBox = this.element.get_BoundingBox(null);
 
-                    BBox = bbox;
+                // otherwise get or expand the bbox from childnode
+                if (childNode != null && childNode.BBox != null) {
+                    if (BBox is null)
+                        BBox = childNode.BBox;
+                    else
+                        BBox.ExpandTo(childNode.BBox);
                 }
 
-                if (childNode != null && childNode.BBox != null)
-                    BBox.ExpandTo(childNode.BBox);
-                
-                this.extras.Properties["Bounding Box Min"] = Util.PointString(BBox.Min);
-                this.extras.Properties["Bounding Box Max"] = Util.PointString(BBox.Max);
+                // if we have a bbox by now
+                if (BBox != null) {
+                    this.extras.Properties["Bounding Box Min"] = Util.PointString(BBox.Min);
+                    this.extras.Properties["Bounding Box Max"] = Util.PointString(BBox.Max);
+                }
             }
             catch (Exception ex) {
                 this.extras.Properties["Error"] = ex.Message;

@@ -164,6 +164,7 @@ namespace glTFRevitExport
         public string name { get; set; }
         public glTFPBR pbrMetallicRoughness { get; set; }
     }
+    
     public class glTFPBR
     {
         public List<float> baseColorFactor { get; set; }

@@ -48,7 +48,10 @@ namespace glTFRevitExport
         /// </summary>
         private string _directory;
 
-        private bool _skipElementFlag = false;
+        /// <summary>
+        /// Skip the current element from processing
+        /// </summary>
+        private bool _skipCurrentElement = false;
 
         private GLTFManager manager = new GLTFManager();
         private Stack<Document> documentStack = new Stack<Document>();
@@ -210,12 +213,13 @@ namespace glTFRevitExport
         {
             Element e = _doc.GetElement(elementId);
             Debug.WriteLine(String.Format("{2}OnElementBegin: {1}-{0}", e.Name, elementId, manager.formatDebugHeirarchy));
+            _skipCurrentElement = false;
 
             if (manager.containsNode(e.UniqueId))
             {
                 // Duplicate element, skip adding.
+                _skipCurrentElement = true;
                 Debug.WriteLine(String.Format("{0}  Duplicate Element!", manager.formatDebugHeirarchy));
-                _skipElementFlag = true;
                 return RenderNodeAction.Skip;
             }
 
@@ -273,11 +277,8 @@ namespace glTFRevitExport
         public void OnElementEnd(ElementId elementId)
         {
             Debug.WriteLine(String.Format("{0}OnElementEnd", manager.formatDebugHeirarchy.Substring(0, manager.formatDebugHeirarchy.Count() - 2)));
-            if (_skipElementFlag)
-            {
-                _skipElementFlag = false;
+            if (_skipCurrentElement)
                 return;
-            }
 
             manager.CloseNode();
         }
@@ -291,14 +292,16 @@ namespace glTFRevitExport
         public RenderNodeAction OnInstanceBegin(InstanceNode node)
         {
             Debug.WriteLine(String.Format("{0}OnInstanceBegin", manager.formatDebugHeirarchy));
-            
+
             ElementId symId = node.GetSymbolId();
             Element symElem = _doc.GetElement(symId);
 
             Debug.WriteLine(String.Format("{2}OnInstanceBegin: {0}-{1}", symId, symElem.Name, manager.formatDebugHeirarchy));
 
             var nodeXform = node.GetTransform();
-            manager.OpenNode(symElem, nodeXform.IsIdentity ? null : nodeXform, true);
+            //manager.OpenNode(symElem, nodeXform.IsIdentity ? null : nodeXform, true);
+            if (!nodeXform.IsIdentity)
+                manager.UpdateNodeTransform(nodeXform);
 
             return RenderNodeAction.Proceed;
         }
@@ -310,12 +313,12 @@ namespace glTFRevitExport
         /// <param name="node"></param>
         public void OnInstanceEnd(InstanceNode node)
         {
-            Debug.WriteLine(String.Format("{0}OnInstanceEnd", manager.formatDebugHeirarchy.Substring(0,manager.formatDebugHeirarchy.Count() - 2)));
+            Debug.WriteLine(String.Format("{0}OnInstanceEnd", manager.formatDebugHeirarchy.Substring(0, manager.formatDebugHeirarchy.Count() - 2)));
 
-            ElementId symId = node.GetSymbolId();
-            Element symElem = _doc.GetElement(symId);
+            //ElementId symId = node.GetSymbolId();
+            //Element symElem = _doc.GetElement(symId);
 
-            manager.CloseNode(symElem, true);
+            //manager.CloseNode(symElem, true);
         }
 
         public bool IsCanceled()
