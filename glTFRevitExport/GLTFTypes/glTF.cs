@@ -1,15 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace glTFRevitExport
-{
+namespace GLTFRevitExport.GLTFTypes {
     /// <summary>
     /// Magic numbers to differentiate scalar and vector 
     /// array buffers.
     /// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#buffers-and-buffer-views
     /// </summary>
-    public enum Targets
-    {
+    public enum Targets {
         ARRAY_BUFFER = 34962, // signals vertex data
         ELEMENT_ARRAY_BUFFER = 34963 // signals index or face data
     }
@@ -19,8 +17,7 @@ namespace glTFRevitExport
     /// types.
     /// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#accessor-element-size
     /// </summary>
-    public enum ComponentType
-    {
+    public enum ComponentType {
         BYTE = 5120,
         UNSIGNED_BYTE = 5121,
         SHORT = 5122,
@@ -29,8 +26,7 @@ namespace glTFRevitExport
         FLOAT = 5126
     }
 
-    public struct glTFContainer
-    {
+    public class glTFContainer {
         public glTF glTF;
         public List<glTFBinaryData> binaries;
     }
@@ -39,9 +35,8 @@ namespace glTFRevitExport
     /// The json serializable glTF file format.
     /// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0
     /// </summary>
-    public struct glTF
-    {
-        public glTFVersion asset;
+    public class glTF {
+        public glTFAsset asset;
         public List<glTFScene> scenes;
         public List<glTFNode> nodes;
         public List<glTFMesh> meshes;
@@ -55,9 +50,8 @@ namespace glTFRevitExport
     /// A binary data store serialized to a *.bin file
     /// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#binary-data-storage
     /// </summary>
-    public class glTFBinaryData : HashedType
-    {
-        public glTFBinaryBufferContents contents { get; set; }
+    public class glTFBinaryData : HashedType {
+        public glTFBinaryBufferSegment contents { get; set; }
         //public List<float> vertexBuffer { get; set; } = new List<float>();
         //public List<int> indexBuffer { get; set; } = new List<int>();
         //public List<float> normalBuffer { get; set; } = new List<float>();
@@ -69,27 +63,27 @@ namespace glTFRevitExport
     }
 
     [Serializable]
-    public class glTFBinaryBufferContents
-    {
+    public class glTFBinaryBufferSegment {
         public List<float> vertexBuffer { get; set; } = new List<float>();
-        public List<int> indexBuffer { get; set; } = new List<int>();
+        public List<int> faceVertexIndexBuffer { get; set; } = new List<int>();
+    
     }
 
     /// <summary>
     /// Required glTF asset information
     /// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#asset
     /// </summary>
-    public class glTFVersion
-    {
+    public class glTFAsset {
         public string version = "2.0";
     }
 
+    public class glTFGraphNode { }
+    
     /// <summary>
     /// The scenes available to render.
     /// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#scenes
     /// </summary>
-    public class glTFScene
-    {
+    public class glTFScene: glTFGraphNode {
         public List<int> nodes = new List<int>();
     }
 
@@ -97,8 +91,7 @@ namespace glTFRevitExport
     /// The nodes defining individual (or nested) elements in the scene.
     /// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#nodes-and-hierarchy
     /// </summary>
-    public class glTFNode
-    {
+    public class glTFNode: glTFGraphNode {
         /// <summary>
         /// The user-defined name of this object
         /// </summary>
@@ -121,13 +114,11 @@ namespace glTFRevitExport
         public glTFExtras extras { get; set; }
     }
 
-    public class HashedType
-    {
+    public class HashedType {
         public string hashcode { get; set; }
     }
 
-    public class MeshContainer : HashedType
-    {
+    public class MeshContainer : HashedType {
         //public string hashcode { get; set; }
         public glTFMesh contents { get; set; }
     }
@@ -137,8 +128,7 @@ namespace glTFRevitExport
     /// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#meshes
     /// </summary>
     [Serializable]
-    public class glTFMesh
-    {
+    public class glTFMesh {
         public List<glTFMeshPrimitive> primitives { get; set; }
     }
 
@@ -147,8 +137,7 @@ namespace glTFRevitExport
     /// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#meshes
     /// </summary>
     [Serializable]
-    public class glTFMeshPrimitive
-    {
+    public class glTFMeshPrimitive {
         public glTFAttribute attributes { get; set; } = new glTFAttribute();
         public int indices { get; set; }
         public int? material { get; set; } = null;
@@ -159,13 +148,11 @@ namespace glTFRevitExport
     /// The glTF PBR Material format.
     /// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#materials
     /// </summary>
-    public class glTFMaterial
-    {
+    public class glTFMaterial {
         public string name { get; set; }
         public glTFPBR pbrMetallicRoughness { get; set; }
     }
-    public class glTFPBR
-    {
+    public class glTFPBR {
         public List<float> baseColorFactor { get; set; }
         public float metallicFactor { get; set; }
         public float roughnessFactor { get; set; }
@@ -176,8 +163,7 @@ namespace glTFRevitExport
     /// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#meshes
     /// </summary>
     [Serializable]
-    public class glTFAttribute
-    {
+    public class glTFAttribute {
         /// <summary>
         /// The index of the accessor for position data.
         /// </summary>
@@ -189,8 +175,7 @@ namespace glTFRevitExport
     /// A reference to the location and size of binary data.
     /// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#buffers-and-buffer-views
     /// </summary>
-    public class glTFBuffer
-    {
+    public class glTFBuffer {
         /// <summary>
         /// The uri of the buffer.
         /// </summary>
@@ -205,8 +190,7 @@ namespace glTFRevitExport
     /// A reference to a subsection of a buffer containing either vector or scalar data.
     /// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#buffers-and-buffer-views
     /// </summary>
-    public class glTFBufferView
-    {
+    public class glTFBufferView {
         /// <summary>
         /// The index of the buffer.
         /// </summary>
@@ -233,8 +217,7 @@ namespace glTFRevitExport
     /// A reference to a subsection of a BufferView containing a particular data type.
     /// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#accessors
     /// </summary>
-    public class glTFAccessor
-    {
+    public class glTFAccessor {
         /// <summary>
         /// The index of the bufferView.
         /// </summary>
@@ -269,8 +252,7 @@ namespace glTFRevitExport
         public string name { get; set; }
     }
 
-    public class glTFExtras
-    {
+    public class glTFExtras {
         /// <summary>
         /// The Revit created UniqueId for this object
         /// </summary>
@@ -279,8 +261,7 @@ namespace glTFRevitExport
         public Dictionary<string, string> Properties { get; set; }
     }
 
-    public class GridParameters
-    {
+    public class GridParameters {
         public List<double> origin { get; set; }
         public List<double> direction { get; set; }
         public double length { get; set; }
