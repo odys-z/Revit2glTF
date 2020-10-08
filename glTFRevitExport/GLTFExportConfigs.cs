@@ -16,6 +16,11 @@ namespace GLTFRevitExport {
     /// </summary>
     public class GLTFExportConfigs {
         /// <summary>
+        /// Stop on errors
+        /// </summary>
+        public bool StopOnErrors { get; set; } = true;
+
+        /// <summary>
         /// Export all buffers into a single binary file
         /// </summary>
         public bool UseSingleBinary { get; set; } = true;

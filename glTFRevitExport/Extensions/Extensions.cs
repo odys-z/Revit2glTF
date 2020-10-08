@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Autodesk.Revit.DB;
 
 namespace GLTFRevitExport.Extensions {
-    public static class Extensions {
+    internal static class Extensions {
         /// <summary>
         /// Consider a Revit length zero 
         /// if is smaller than this.

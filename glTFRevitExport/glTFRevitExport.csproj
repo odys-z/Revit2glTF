@@ -147,6 +147,7 @@
     <Compile Include="Extensions\Extensions.cs" />
     <Compile Include="GLTFExportConfigs.cs" />
     <Compile Include="GLTFExporter.cs" />
+    <Compile Include="Logger.cs" />
     <Compile Include="GLTFTypes\glTF.cs" />
     <Compile Include="GlTFExportContext.cs" />
     <Compile Include="Containers.cs" />

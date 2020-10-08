@@ -26,17 +26,12 @@ namespace GLTFRevitExport.GLTFTypes {
         FLOAT = 5126
     }
 
-    public class glTFContainer {
-        public glTF glTF;
-        public List<glTFBinaryData> binaries;
-    }
-
     /// <summary>
     /// The json serializable glTF file format.
     /// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0
     /// </summary>
     public class glTF {
-        public glTFAsset asset;
+        public glTFAsset asset = new glTFAsset();
         public List<glTFScene> scenes;
         public List<glTFNode> nodes;
         public List<glTFMesh> meshes;
@@ -44,22 +39,6 @@ namespace GLTFRevitExport.GLTFTypes {
         public List<glTFBufferView> bufferViews;
         public List<glTFAccessor> accessors;
         public List<glTFMaterial> materials;
-    }
-
-    /// <summary>
-    /// A binary data store serialized to a *.bin file
-    /// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#binary-data-storage
-    /// </summary>
-    public class glTFBinaryData : HashedType {
-        public glTFBinaryBufferSegment contents { get; set; }
-        //public List<float> vertexBuffer { get; set; } = new List<float>();
-        //public List<int> indexBuffer { get; set; } = new List<int>();
-        //public List<float> normalBuffer { get; set; } = new List<float>();
-        public int vertexAccessorIndex { get; set; }
-        public int indexAccessorIndex { get; set; }
-        //public int normalsAccessorIndex { get; set; }
-        public string name { get; set; }
-        //public string hashcode { get; set; }
     }
 
     [Serializable]
@@ -84,7 +63,7 @@ namespace GLTFRevitExport.GLTFTypes {
     /// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#scenes
     /// </summary>
     public class glTFScene: glTFGraphNode {
-        public List<int> nodes = new List<int>();
+        public List<int> nodes { get; set; }
     }
 
     /// <summary>
@@ -99,7 +78,7 @@ namespace GLTFRevitExport.GLTFTypes {
         /// <summary>
         /// The index of the mesh in this node.
         /// </summary>
-        public int? mesh { get; set; } = null;
+        public int mesh { get; set; }
         /// <summary>
         /// A floating-point 4x4 transformation matrix stored in column major order.
         /// </summary>

@@ -6,21 +6,71 @@ using System.Security.Cryptography;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 
+using Newtonsoft.Json;
 using Autodesk.Revit.DB;
 
 using GLTFRevitExport.GLTFTypes;
 using GLTFRevitExport.Properties;
-using Newtonsoft.Json.Bson;
 
 namespace GLTFRevitExport {
-    #region Initialization
-    internal partial class GLTFBuilder {
+    #region Initialization, Completion
+    internal sealed partial class GLTFBuilder {
+        /// <summary>
+        /// Pack the constructed glTF data into a container
+        /// </summary>
+        /// <returns></returns>
+        internal GLTFContainer Pack(string filename, bool singleBinary = true) {
+            // store snapshot of collected data into a gltf structure
+            var model = new glTF();
+            model.scenes = _scenes;
+            model.nodes = _nodes;
+            model.meshes = _meshes;
+            model.materials = _materials;
+            model.buffers = _buffers;
+            model.bufferViews = _bufferViews;
+            model.accessors = _accessors;
 
+            if (singleBinary) {
+                int bytePosition = 0;
+                int currentBuffer = 0;
+                foreach (var _buffView in _bufferViews) {
+                    if (_buffView.buffer == 0) {
+                        bytePosition += _buffView.byteLength;
+                        continue;
+                    }
+
+                    if (_buffView.buffer != currentBuffer) {
+                        _buffView.buffer = 0;
+                        _buffView.byteOffset = bytePosition;
+                        bytePosition += _buffView.byteLength;
+                    }
+                }
+
+                var buffer = new glTFBuffer();
+                buffer.uri = filename + ".bin";
+                buffer.byteLength = bytePosition;
+                model.buffers.Clear();
+                model.buffers.Add(buffer);
+
+                // TODO: binaries?!
+                return new GLTFContainer() {
+                    Name = filename,
+                    Model = model
+                };
+            }
+            else {
+                return new GLTFContainer() {
+                    Name = filename,
+                    Model = model,
+                    Binaries = _binaryFileData
+                };
+            }
+        }
     }
     #endregion
 
     #region Data stacks
-    internal partial class GLTFBuilder {
+    internal sealed partial class GLTFBuilder {
         private GLTFBuilderScenePath _path = null;
 
         private List<glTFScene> _scenes = new List<glTFScene>();
@@ -36,6 +86,31 @@ namespace GLTFRevitExport {
         private glTFMaterial _material => _materials[_currentMaterialIndex];
 
         private List<GLTFGeom> _geoms = new List<GLTFGeom>();
+
+        /// <summary>
+        /// List of all Meshes referencing Accessors, and referenced by Nodes
+        /// </summary>
+        public List<glTFMesh> _meshes = new List<glTFMesh>();
+
+        /// <summary>
+        /// List of all Accessors referencing the BufferViews
+        /// </summary>
+        public List<glTFAccessor> _accessors = new List<glTFAccessor>();
+
+        /// <summary>
+        /// List of all BufferViews referencing the Buffers
+        /// </summary>
+        public List<glTFBufferView> _bufferViews = new List<glTFBufferView>();
+
+        /// <summary>
+        /// List of all Buffers referencing the external binary data
+        /// </summary>
+        public List<glTFBuffer> _buffers = new List<glTFBuffer>();
+
+        /// <summary>
+        /// List of all external binary files
+        /// </summary>
+        public List<GLTFBinaryData> _binaryFileData = new List<GLTFBinaryData>();
     }
 
     internal class GLTFBuilderScenePath {
@@ -62,7 +137,7 @@ namespace GLTFRevitExport {
     #endregion
 
     #region Builders
-    internal partial class GLTFBuilder {
+    internal sealed partial class GLTFBuilder {
         public void OpenScene() {
             var scene = new glTFScene();
             _scenes.Add(scene);
@@ -83,11 +158,15 @@ namespace GLTFRevitExport {
                 // if a parent node exists, add to the node children nodes
                 if (path.PeekNodeIdx() is int parentNodeIdx) {
                     var parent = _nodes[parentNodeIdx];
+                    if (parent.children is null)
+                        parent.children = new List<int>();
                     parent.children.Add(_currentNodeIndex);
                 }
                 // otherwise add to the scene nodes
                 else {
                     var scene = _scenes[path.SceneIdx];
+                    if (scene.nodes is null)
+                        scene.nodes = new List<int>();
                     scene.nodes.Add(_currentNodeIndex);
                 }
 
@@ -152,6 +231,8 @@ namespace GLTFRevitExport {
             else
                 throw new Exception(StringLib.NoParentNode);
         }
+
+        public void CloseScene() { }
     }
     #endregion
 
@@ -161,7 +242,7 @@ namespace GLTFRevitExport {
     /// </summary>
     // From Jeremy Tammik's RvtVa3c exporter:
     // https://github.com/va3c/RvtVa3c
-    public class GLTFVector : IComparable<GLTFVector> {
+    internal class GLTFVector : IComparable<GLTFVector> {
         public long X { get; set; }
         public long Y { get; set; }
         public long Z { get; set; }
@@ -191,7 +272,7 @@ namespace GLTFRevitExport {
         }
     }
 
-    public class GLTFFace {
+    internal class GLTFFace {
         public int V1 { get; set; }
         public int V2 { get; set; }
         public int V3 { get; set; }
@@ -200,18 +281,82 @@ namespace GLTFRevitExport {
 
         }
     }
-    
-    public class GLTFGeom {
+
+    internal class GLTFGeom {
         public GLTFVector[] Vertices;
         public GLTFVector[] Normals;
         public GLTFFace[] Faces;
         public int MaterialIndex;
     }
 
+    /// <summary>
+    /// A binary data store serialized to a *.bin file
+    /// </summary>
+    internal class GLTFBinaryData {
+        public string name { get; set; }
+        public glTFBinaryBufferSegment contents { get; set; }
+        public int vertexAccessorIndex { get; set; }
+        public int indexAccessorIndex { get; set; }
+    }
+
+    internal class GLTFContainer {
+        public string Name;
+        public glTF Model;
+        public List<GLTFBinaryData> Binaries;
+
+        public void Write(string directory) {
+            // write the container data
+            // write the *.bin files
+            //if () {
+            //    using (FileStream f = File.Create(Path.Combine(_directory, buffer.uri))) {
+            //        using (BinaryWriter writer = new BinaryWriter(f)) {
+            //            foreach (var bin in container.binaries) {
+            //                foreach (var coord in bin.contents.vertexBuffer) {
+            //                    writer.Write((float)coord);
+            //                }
+            //                foreach (var index in bin.contents.indexBuffer) {
+            //                    writer.Write((int)index);
+            //                }
+            //            }
+            //        }
+            //    }
+            //}
+            //else {
+            //    // Write the *.bin files
+            //    foreach (var bin in container.binaries) {
+            //        using (FileStream f = File.Create(Path.Combine(_directory, bin.name))) {
+            //            using (BinaryWriter writer = new BinaryWriter(f)) {
+            //                foreach (var coord in bin.contents.vertexBuffer) {
+            //                    writer.Write((float)coord);
+            //                }
+            //                foreach (var index in bin.contents.indexBuffer) {
+            //                    writer.Write((int)index);
+            //                }
+            //            }
+            //        }
+            //    }
+            //}
+
+            // Write the *.gltf file
+            string serializedModel =
+                JsonConvert.SerializeObject(
+                    Model,
+                    new JsonSerializerSettings {
+                        NullValueHandling = NullValueHandling.Ignore
+                    });
+
+            File.WriteAllText(
+                Path.Combine(directory, Name + ".gltf"),
+                serializedModel
+            );
+        }
+    }
     #endregion
 
     #region Utils
-    internal partial class GLTFBuilder {
+    internal sealed partial class GLTFBuilder {
+        private Logger _logger = new Logger();
+
         ///// <summary>
         ///// Takes the intermediate geometry data and performs the calculations
         ///// to convert that into glTF buffers, views, and accessors
@@ -224,7 +369,7 @@ namespace GLTFRevitExport {
         //    var bufferSegment = new glTFBinaryBufferSegment();
         //    bufferSegment.vertexBuffer =
         //        vertices.Select(x => Convert.ToSingle(x)).ToList();
-            
+
         //    foreach (var facet in facets) {
         //        bufferSegment.faceVertexIndexBuffer.Add(facet.V1);
         //        bufferSegment.faceVertexIndexBuffer.Add(facet.V2);
@@ -382,18 +527,6 @@ namespace GLTFRevitExport {
     //    private List<MeshContainer> meshContainers = new List<MeshContainer>();
 
     //    /// <summary>
-    //    /// List of all buffers referencing the binary file data.
-    //    /// </summary>
-    //    public List<glTFBuffer> buffers = new List<glTFBuffer>();
-    //    /// <summary>
-    //    /// List of all BufferViews referencing the buffers.
-    //    /// </summary>
-    //    public List<glTFBufferView> bufferViews = new List<glTFBufferView>();
-    //    /// <summary>
-    //    /// List of all Accessors referencing the BufferViews.
-    //    /// </summary>
-    //    public List<glTFAccessor> accessors = new List<glTFAccessor>();
-    //    /// <summary>
     //    /// Container for the vertex/face/normal information
     //    /// that will be serialized into a binary format
     //    /// for the final *.bin files.
@@ -406,15 +539,6 @@ namespace GLTFRevitExport {
     //    public List<glTFMaterial> materials {
     //        get {
     //            return materialDict.List;
-    //        }
-    //    }
-
-    //    /// <summary>
-    //    /// List of all meshes referenced by nodes.
-    //    /// </summary>
-    //    public List<glTFMesh> meshes {
-    //        get {
-    //            return meshContainers.Select(x => x.contents).ToList();
     //        }
     //    }
 
@@ -432,24 +556,6 @@ namespace GLTFRevitExport {
     //        get {
     //            return geometryStack.Peek();
     //        }
-    //    }
-
-    //    public glTFContainer Finish() {
-    //        glTF model = new glTF();
-    //        model.asset = new glTFAsset();
-    //        model.scenes = _scenes;
-    //        model.nodes = nodes;
-    //        model.meshes = meshes;
-    //        model.materials = materials;
-    //        model.buffers = buffers;
-    //        model.bufferViews = bufferViews;
-    //        model.accessors = accessors;
-
-    //        glTFContainer container = new glTFContainer();
-    //        container.glTF = model;
-    //        container.binaries = binaryFileData;
-
-    //        return container;
     //    }
     //}
 }
