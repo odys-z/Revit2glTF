@@ -24,7 +24,7 @@ namespace GLTFRevitExport.GLTF.Types {
             glTFNode openItem = Peek();
             if (openItem is glTFNode parent) {
                 if (parent.Children is null)
-                    parent.Children = new HashSet<uint>();
+                    parent.Children = new List<uint>();
                 parent.Children.Add(itemIndex);
             }
             return itemIndex;

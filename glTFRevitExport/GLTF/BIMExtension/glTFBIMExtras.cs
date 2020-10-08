@@ -4,11 +4,17 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using Autodesk.Revit.DB;
+
 namespace GLTFRevitExport.GLTF.Types.BIMExtension {
     /// <summary>
     /// 
     /// </summary>
     public class glTFBIMExtras: glTFExtras {
+        public glTFBIMExtras(Element e) {
+            // TODO: grab properties
+        }
+
         /// <summary>
         /// The Revit created UniqueId for this object
         /// </summary>

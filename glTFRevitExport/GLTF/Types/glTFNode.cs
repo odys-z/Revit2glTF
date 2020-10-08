@@ -35,7 +35,7 @@ namespace GLTFRevitExport.GLTF.Types {
         /// The indices of this node's children.
         /// </summary>
         [JsonProperty("children")]
-        public HashSet<uint> Children { get; set; }
+        public List<uint> Children { get; set; }
 
         /// <summary>
         /// The extras describing this node.

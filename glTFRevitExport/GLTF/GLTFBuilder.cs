@@ -13,6 +13,7 @@ using GLTFRevitExport.GLTF.Types;
 using GLTFRevitExport.Properties;
 using System.Data;
 using System.Runtime.CompilerServices;
+using GLTFRevitExport.GLTF.Types.BIMExtension;
 
 namespace GLTFRevitExport.GLTF {
     #region Initialization, Completion
@@ -73,24 +74,15 @@ namespace GLTFRevitExport.GLTF {
     #region Data stacks
     internal sealed partial class GLTFBuilder {
         private glTF _gltf = null;
-
-        private glTFScene PeekScene() => _gltf.Scenes.LastOrDefault();
-    }
-    #endregion
-
-    #region Builders
-    internal sealed partial class GLTFBuilder {
-        public uint OpenScene(string name) {
-            _gltf.Scenes.Add(new glTFScene { Name = name });
-            return (uint)_gltf.Scenes.Count - 1;
-        }
-
-        public uint AppendNode(string name, double[] matrix) {
-            if (PeekScene() is glTFScene scene) {
+        private glTFScene peekScene() => _gltf.Scenes.LastOrDefault();
+        private glTFNode peekNode() => _gltf.Nodes.LastOrDefault();
+        public uint appendNode(string name, double[] matrix, glTFExtras extras) {
+            if (peekScene() is glTFScene scene) {
                 // create new node and set base properties
                 var node = new glTFNode() {
                     Name = name ?? "undefined",
-                    Matrix = matrix
+                    Matrix = matrix,
+                    Extras = extras
                 };
 
                 var idx = _gltf.Nodes.Append(node);
@@ -102,8 +94,18 @@ namespace GLTFRevitExport.GLTF {
                 throw new Exception(StringLib.NoParentScene);
         }
 
-        public void OpenNode(string name, double[] matrix) {
-            var idx = AppendNode(name, matrix);
+    }
+    #endregion
+
+    #region Builders
+    internal sealed partial class GLTFBuilder {
+        public uint OpenScene(string name) {
+            _gltf.Scenes.Add(new glTFScene { Name = name });
+            return (uint)_gltf.Scenes.Count - 1;
+        }
+
+        public void OpenNode(string name, double[] matrix, glTFExtras extras) {
+            var idx = appendNode(name, matrix, extras);
             _gltf.Nodes.Open(idx);
         }
 
@@ -114,7 +116,7 @@ namespace GLTFRevitExport.GLTF {
                 throw new Exception(StringLib.NoParentNode);
         }
 
-        public void UpdateNodeMaterial(string name, Color color = null, double transparency = 0.0) {
+        public void UpdateNodeGeometryMaterial(string name, Color color = null, double transparency = 0.0) {
             if (_gltf.Nodes.Peek() is glTFNode parent) {
                 // TODO: add this to materials or use existing
                 var material = new glTFMaterial() {
@@ -137,18 +139,18 @@ namespace GLTFRevitExport.GLTF {
         }
 
         public void UpdateNodeGeometry(GLTFVector[] vertices, GLTFVector[] normals, GLTFFace[] faces) {
-            //if (_path.PeekNodeIdx() is int) {
-            //    _geoms.Add(
-            //        new GLTFGeom {
-            //            Vertices = vertices,
-            //            Normals = normals,
-            //            Faces = faces,
-            //            MaterialIndex = _path.MaterialIdx
-            //        }
-            //    );
-            //}
-            //else
-            //    throw new Exception(StringLib.NoParentNode);
+            if (_gltf.Nodes.Peek() is glTFNode parent) {
+                _geoms.Add(
+                    new GLTFGeom {
+                        Vertices = vertices,
+                        Normals = normals,
+                        Faces = faces,
+                        MaterialIndex = _path.MaterialIdx
+                    }
+                );
+            }
+            else
+                throw new Exception(StringLib.NoParentNode);
         }
 
         public void CloseNode() => _gltf.Nodes.Close();

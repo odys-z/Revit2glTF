@@ -100,6 +100,10 @@ namespace GLTFRevitExport.GLTF {
         }
     }
 
+
+
+
+
     /// <summary>
     /// A binary data store serialized to a *.bin file
     /// </summary>

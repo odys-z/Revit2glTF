@@ -17,7 +17,7 @@ namespace GLTFRevitExport.GLTF.Types {
         public string Name { get; set; }
 
         [JsonProperty("nodes")]
-        public HashSet<uint> Nodes { get; set; } = new HashSet<uint>();
+        public List<uint> Nodes { get; set; } = new List<uint>();
 
         [JsonProperty("extras")]
         public glTFExtras Extras { get; set; }
