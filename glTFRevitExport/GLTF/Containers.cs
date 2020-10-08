@@ -1,9 +1,168 @@
 ﻿using System;
+using System.IO;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+
+using Newtonsoft.Json;
+
 using Autodesk.Revit.DB;
 
-namespace GLTFRevitExport
-{
+using GLTFRevitExport.GLTF.Types;
+using GLTFRevitExport.Properties;
+using Autodesk.Private.InfoCenterLib;
+
+namespace GLTFRevitExport.GLTF {
+    /// <summary>
+    /// An integer-based 3D point class
+    /// </summary>
+    // From Jeremy Tammik's RvtVa3c exporter:
+    // https://github.com/va3c/RvtVa3c
+    internal class GLTFVector : IComparable<GLTFVector> {
+        public long X { get; set; }
+        public long Y { get; set; }
+        public long Z { get; set; }
+
+        public GLTFVector(long x, long y, long z) {
+            X = x;
+            Y = y;
+            Z = z;
+
+            //if (switch_coordinates) {
+            //    X = -X;
+            //    long tmp = Y;
+            //    Y = Z;
+            //    Z = tmp;
+            //}
+        }
+
+        public int CompareTo(GLTFVector a) {
+            long d = X - a.X;
+            if (0 == d) {
+                d = Y - a.Y;
+                if (0 == d) {
+                    d = Z - a.Z;
+                }
+            }
+            return (0 == d) ? 0 : ((0 < d) ? 1 : -1);
+        }
+    }
+
+    internal class GLTFFace {
+        public uint V1 { get; set; }
+        public uint V2 { get; set; }
+        public uint V3 { get; set; }
+
+        public GLTFFace(int v1, int v2, int v3) {
+
+        }
+
+        public static GLTFFace operator +(GLTFFace left, uint shift) {
+            left.V1 += shift;
+            left.V2 += shift;
+            left.V3 += shift;
+            return left;
+        }
+    }
+
+    internal class GLTFGeom {
+        // TODO: ensure normals and vertices have the same length
+        public GLTFVector[] Vertices;
+        public GLTFVector[] Normals;
+        public GLTFFace[] Faces;
+        public int MaterialIndex;
+
+        public override int GetHashCode() {
+            return base.GetHashCode();
+        }
+
+        public static GLTFGeom operator +(GLTFGeom left, GLTFGeom right) {
+            int startIdx = left.Vertices.Length;
+
+            // new vertices array
+            var vertices = new List<GLTFVector>(left.Vertices);
+            vertices.AddRange(right.Vertices);
+
+            // new vertices array
+            var normals = new List<GLTFVector>(left.Normals);
+            normals.AddRange(right.Normals);
+
+            // shift face indices
+            var faces = new List<GLTFFace>();
+            foreach (var face in right.Faces)
+                faces.Add(face + (uint)startIdx);
+
+            return new GLTFGeom {
+                Vertices = vertices.ToArray(),
+                Normals = normals.ToArray(),
+                Faces = faces.ToArray()
+            };
+        }
+    }
+
+    /// <summary>
+    /// A binary data store serialized to a *.bin file
+    /// </summary>
+    internal class GLTFBinaryData {
+        public string name { get; set; }
+        public glTFBinaryBufferSegment contents { get; set; }
+        public int vertexAccessorIndex { get; set; }
+        public int indexAccessorIndex { get; set; }
+    }
+
+    internal class GLTFContainer {
+        public string Name;
+        public glTF Model;
+        public List<GLTFBinaryData> Binaries;
+
+        public void Write(string directory) {
+            // write the container data
+            // write the *.bin files
+            //if () {
+            //    using (FileStream f = File.Create(Path.Combine(_directory, buffer.uri))) {
+            //        using (BinaryWriter writer = new BinaryWriter(f)) {
+            //            foreach (var bin in container.binaries) {
+            //                foreach (var coord in bin.contents.vertexBuffer) {
+            //                    writer.Write((float)coord);
+            //                }
+            //                foreach (var index in bin.contents.indexBuffer) {
+            //                    writer.Write((int)index);
+            //                }
+            //            }
+            //        }
+            //    }
+            //}
+            //else {
+            //    // Write the *.bin files
+            //    foreach (var bin in container.binaries) {
+            //        using (FileStream f = File.Create(Path.Combine(_directory, bin.name))) {
+            //            using (BinaryWriter writer = new BinaryWriter(f)) {
+            //                foreach (var coord in bin.contents.vertexBuffer) {
+            //                    writer.Write((float)coord);
+            //                }
+            //                foreach (var index in bin.contents.indexBuffer) {
+            //                    writer.Write((int)index);
+            //                }
+            //            }
+            //        }
+            //    }
+            //}
+
+            // Write the *.gltf file
+            string serializedModel =
+                JsonConvert.SerializeObject(
+                    Model,
+                    new JsonSerializerSettings {
+                        NullValueHandling = NullValueHandling.Ignore
+                    });
+
+            File.WriteAllText(
+                Path.Combine(directory, Name + ".gltf"),
+                serializedModel
+            );
+        }
+    }
+
     ///// <summary>
     ///// Intermediate data format for 
     ///// converting between Revit Polymesh

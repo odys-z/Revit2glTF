@@ -9,347 +9,151 @@ using System.Text;
 using Newtonsoft.Json;
 using Autodesk.Revit.DB;
 
-using GLTFRevitExport.GLTFTypes;
+using GLTFRevitExport.GLTF.Types;
 using GLTFRevitExport.Properties;
+using System.Data;
+using System.Runtime.CompilerServices;
 
-namespace GLTFRevitExport {
+namespace GLTFRevitExport.GLTF {
     #region Initialization, Completion
     internal sealed partial class GLTFBuilder {
+        internal GLTFBuilder(string generatorId, string copyright) {
+            _gltf = new glTF(genertor: generatorId, copyright: copyright);
+        }
+
         /// <summary>
         /// Pack the constructed glTF data into a container
         /// </summary>
         /// <returns></returns>
         internal GLTFContainer Pack(string filename, bool singleBinary = true) {
             // store snapshot of collected data into a gltf structure
-            var model = new glTF();
-            model.scenes = _scenes;
-            model.nodes = _nodes;
-            model.meshes = _meshes;
-            model.materials = _materials;
-            model.buffers = _buffers;
-            model.bufferViews = _bufferViews;
-            model.accessors = _accessors;
+            return new GLTFContainer() {
+                Name = filename,
+                Model = _gltf
+            };
+            //if (singleBinary) {
+            //    int bytePosition = 0;
+            //    int currentBuffer = 0;
+            //    foreach (var _buffView in _bufferViews) {
+            //        if (_buffView.buffer == 0) {
+            //            bytePosition += _buffView.byteLength;
+            //            continue;
+            //        }
 
-            if (singleBinary) {
-                int bytePosition = 0;
-                int currentBuffer = 0;
-                foreach (var _buffView in _bufferViews) {
-                    if (_buffView.buffer == 0) {
-                        bytePosition += _buffView.byteLength;
-                        continue;
-                    }
+            //        if (_buffView.buffer != currentBuffer) {
+            //            _buffView.buffer = 0;
+            //            _buffView.byteOffset = bytePosition;
+            //            bytePosition += _buffView.byteLength;
+            //        }
+            //    }
 
-                    if (_buffView.buffer != currentBuffer) {
-                        _buffView.buffer = 0;
-                        _buffView.byteOffset = bytePosition;
-                        bytePosition += _buffView.byteLength;
-                    }
-                }
+            //    var buffer = new glTFBuffer();
+            //    buffer.uri = filename + ".bin";
+            //    buffer.byteLength = bytePosition;
+            //    _gltf.Buffers.Clear();
+            //    _gltf.Buffers.Add(buffer);
 
-                var buffer = new glTFBuffer();
-                buffer.uri = filename + ".bin";
-                buffer.byteLength = bytePosition;
-                model.buffers.Clear();
-                model.buffers.Add(buffer);
-
-                // TODO: binaries?!
-                return new GLTFContainer() {
-                    Name = filename,
-                    Model = model
-                };
-            }
-            else {
-                return new GLTFContainer() {
-                    Name = filename,
-                    Model = model,
-                    Binaries = _binaryFileData
-                };
-            }
+            //    // TODO: binaries?!
+            //    return new GLTFContainer() {
+            //        Name = filename,
+            //        Model = _gltf
+            //    };
+            //}
+            //else {
+            //    return new GLTFContainer() {
+            //        Name = filename,
+            //        Model = _gltf,
+            //        Binaries = _binaryFileData
+            //    };
+            //}
         }
     }
     #endregion
 
     #region Data stacks
     internal sealed partial class GLTFBuilder {
-        private GLTFBuilderScenePath _path = null;
+        private glTF _gltf = null;
 
-        private List<glTFScene> _scenes = new List<glTFScene>();
-        private int _currentSceneIndex => _scenes.Count() - 1;
-        private glTFScene _scene => _scenes[_currentSceneIndex];
-
-        private List<glTFNode> _nodes = new List<glTFNode>();
-        private int _currentNodeIndex => _nodes.Count() - 1;
-        private glTFNode _node => _nodes[_currentNodeIndex];
-
-        private List<glTFMaterial> _materials = new List<glTFMaterial>();
-        private int _currentMaterialIndex => _nodes.Count() - 1;
-        private glTFMaterial _material => _materials[_currentMaterialIndex];
-
-        private List<GLTFGeom> _geoms = new List<GLTFGeom>();
-
-        /// <summary>
-        /// List of all Meshes referencing Accessors, and referenced by Nodes
-        /// </summary>
-        public List<glTFMesh> _meshes = new List<glTFMesh>();
-
-        /// <summary>
-        /// List of all Accessors referencing the BufferViews
-        /// </summary>
-        public List<glTFAccessor> _accessors = new List<glTFAccessor>();
-
-        /// <summary>
-        /// List of all BufferViews referencing the Buffers
-        /// </summary>
-        public List<glTFBufferView> _bufferViews = new List<glTFBufferView>();
-
-        /// <summary>
-        /// List of all Buffers referencing the external binary data
-        /// </summary>
-        public List<glTFBuffer> _buffers = new List<glTFBuffer>();
-
-        /// <summary>
-        /// List of all external binary files
-        /// </summary>
-        public List<GLTFBinaryData> _binaryFileData = new List<GLTFBinaryData>();
-    }
-
-    internal class GLTFBuilderScenePath {
-        // scene -> node.>.>.node -> material -> geometry
-        internal GLTFBuilderScenePath(int sceneIdx) => SceneIdx = sceneIdx;
-
-        internal int SceneIdx { get; private set; } = -1;
-
-        private Stack<int> _nodes = new Stack<int>();
-        internal void PushNodeIdx(int node) => _nodes.Push(node);
-        internal void PopNodeIdx() {
-            MaterialIdx = -1;
-            if (_nodes.Count > 0)
-                _nodes.Pop();
-        }
-        internal int? PeekNodeIdx() {
-            if (_nodes.Count > 0)
-                return _nodes.Peek();
-            return null;
-        }
-
-        internal int MaterialIdx { get; set; } = -1;
+        private glTFScene PeekScene() => _gltf.Scenes.LastOrDefault();
     }
     #endregion
 
     #region Builders
     internal sealed partial class GLTFBuilder {
-        public void OpenScene() {
-            var scene = new glTFScene();
-            _scenes.Add(scene);
-            _path = new GLTFBuilderScenePath(_currentSceneIndex);
+        public uint OpenScene(string name) {
+            _gltf.Scenes.Add(new glTFScene { Name = name });
+            return (uint)_gltf.Scenes.Count - 1;
         }
 
-        public void OpenNode(string name, double[] matrix) {
-            if (_path is GLTFBuilderScenePath path) {
+        public uint AppendNode(string name, double[] matrix) {
+            if (PeekScene() is glTFScene scene) {
                 // create new node and set base properties
                 var node = new glTFNode() {
-                    name = name ?? "undefined",
-                    matrix = matrix?.ToList()
+                    Name = name ?? "undefined",
+                    Matrix = matrix
                 };
 
-                // add to container node data
-                _nodes.Add(node);
-
-                // if a parent node exists, add to the node children nodes
-                if (path.PeekNodeIdx() is int parentNodeIdx) {
-                    var parent = _nodes[parentNodeIdx];
-                    if (parent.children is null)
-                        parent.children = new List<int>();
-                    parent.children.Add(_currentNodeIndex);
-                }
-                // otherwise add to the scene nodes
-                else {
-                    var scene = _scenes[path.SceneIdx];
-                    if (scene.nodes is null)
-                        scene.nodes = new List<int>();
-                    scene.nodes.Add(_currentNodeIndex);
-                }
-
-                // now set the new node as parent since we are
-                // opening a new node
-                path.PushNodeIdx(_currentNodeIndex);
+                var idx = _gltf.Nodes.Append(node);
+                if (!_gltf.Nodes.IsOpen())
+                    scene.Nodes.Add(idx);
+                return idx;
             }
             else
                 throw new Exception(StringLib.NoParentScene);
         }
 
+        public void OpenNode(string name, double[] matrix) {
+            var idx = AppendNode(name, matrix);
+            _gltf.Nodes.Open(idx);
+        }
+
         public void UpdateNodeMatrix(double[] matrix) {
-            if (_path.PeekNodeIdx() is int currentNodeIdx) {
-                var currentNode = _nodes[currentNodeIdx];
-                currentNode.matrix = matrix?.ToList();
-            }
+            if (_gltf.Nodes.Peek() is glTFNode currentNode)
+                currentNode.Matrix = matrix;
             else
                 throw new Exception(StringLib.NoParentNode);
         }
 
         public void UpdateNodeMaterial(string name, Color color = null, double transparency = 0.0) {
-            if (_path.PeekNodeIdx() is int) {
+            if (_gltf.Nodes.Peek() is glTFNode parent) {
                 // TODO: add this to materials or use existing
                 var material = new glTFMaterial() {
-                    name = name,
-                    pbrMetallicRoughness = new glTFPBR() {
-                        baseColorFactor = new List<float>() {
+                    Name = name,
+                    PBRMetallicRoughness = new glTFPBRMetallicRoughness() {
+                        BaseColorFactor = new List<float>() {
                         color.Red / 255f,
                         color.Green / 255f,
                         color.Blue / 255f,
                         1f - (float)transparency
                     },
-                        metallicFactor = 0f,
-                        roughnessFactor = 1f,
+                        MetallicFactor = 0f,
+                        RoughnessFactor = 1f,
                     }
                 };
-                _materials.Add(material);
-                _path.MaterialIdx = _currentMaterialIndex;
+                _gltf.Materials.Add(material);
             }
             else
                 throw new Exception(StringLib.NoParentNode);
         }
 
         public void UpdateNodeGeometry(GLTFVector[] vertices, GLTFVector[] normals, GLTFFace[] faces) {
-            if (_path.PeekNodeIdx() is int) {
-                _geoms.Add(
-                    new GLTFGeom {
-                        Vertices = vertices,
-                        Normals = normals,
-                        Faces = faces,
-                        MaterialIndex = _path.MaterialIdx
-                    }
-                );
-            }
-            else
-                throw new Exception(StringLib.NoParentNode);
+            //if (_path.PeekNodeIdx() is int) {
+            //    _geoms.Add(
+            //        new GLTFGeom {
+            //            Vertices = vertices,
+            //            Normals = normals,
+            //            Faces = faces,
+            //            MaterialIndex = _path.MaterialIdx
+            //        }
+            //    );
+            //}
+            //else
+            //    throw new Exception(StringLib.NoParentNode);
         }
 
-        public void CloseNode() {
-            if (_path.PeekNodeIdx() is int)
-                _path.PopNodeIdx();
-            else
-                throw new Exception(StringLib.NoParentNode);
-        }
+        public void CloseNode() => _gltf.Nodes.Close();
 
         public void CloseScene() { }
-    }
-    #endregion
-
-    #region Intermediate containers
-    /// <summary>
-    /// An integer-based 3D point class
-    /// </summary>
-    // From Jeremy Tammik's RvtVa3c exporter:
-    // https://github.com/va3c/RvtVa3c
-    internal class GLTFVector : IComparable<GLTFVector> {
-        public long X { get; set; }
-        public long Y { get; set; }
-        public long Z { get; set; }
-
-        public GLTFVector(long x, long y, long z) {
-            X = x;
-            Y = y;
-            Z = z;
-
-            //if (switch_coordinates) {
-            //    X = -X;
-            //    long tmp = Y;
-            //    Y = Z;
-            //    Z = tmp;
-            //}
-        }
-
-        public int CompareTo(GLTFVector a) {
-            long d = X - a.X;
-            if (0 == d) {
-                d = Y - a.Y;
-                if (0 == d) {
-                    d = Z - a.Z;
-                }
-            }
-            return (0 == d) ? 0 : ((0 < d) ? 1 : -1);
-        }
-    }
-
-    internal class GLTFFace {
-        public int V1 { get; set; }
-        public int V2 { get; set; }
-        public int V3 { get; set; }
-
-        public GLTFFace(int v1, int v2, int v3) {
-
-        }
-    }
-
-    internal class GLTFGeom {
-        public GLTFVector[] Vertices;
-        public GLTFVector[] Normals;
-        public GLTFFace[] Faces;
-        public int MaterialIndex;
-    }
-
-    /// <summary>
-    /// A binary data store serialized to a *.bin file
-    /// </summary>
-    internal class GLTFBinaryData {
-        public string name { get; set; }
-        public glTFBinaryBufferSegment contents { get; set; }
-        public int vertexAccessorIndex { get; set; }
-        public int indexAccessorIndex { get; set; }
-    }
-
-    internal class GLTFContainer {
-        public string Name;
-        public glTF Model;
-        public List<GLTFBinaryData> Binaries;
-
-        public void Write(string directory) {
-            // write the container data
-            // write the *.bin files
-            //if () {
-            //    using (FileStream f = File.Create(Path.Combine(_directory, buffer.uri))) {
-            //        using (BinaryWriter writer = new BinaryWriter(f)) {
-            //            foreach (var bin in container.binaries) {
-            //                foreach (var coord in bin.contents.vertexBuffer) {
-            //                    writer.Write((float)coord);
-            //                }
-            //                foreach (var index in bin.contents.indexBuffer) {
-            //                    writer.Write((int)index);
-            //                }
-            //            }
-            //        }
-            //    }
-            //}
-            //else {
-            //    // Write the *.bin files
-            //    foreach (var bin in container.binaries) {
-            //        using (FileStream f = File.Create(Path.Combine(_directory, bin.name))) {
-            //            using (BinaryWriter writer = new BinaryWriter(f)) {
-            //                foreach (var coord in bin.contents.vertexBuffer) {
-            //                    writer.Write((float)coord);
-            //                }
-            //                foreach (var index in bin.contents.indexBuffer) {
-            //                    writer.Write((int)index);
-            //                }
-            //            }
-            //        }
-            //    }
-            //}
-
-            // Write the *.gltf file
-            string serializedModel =
-                JsonConvert.SerializeObject(
-                    Model,
-                    new JsonSerializerSettings {
-                        NullValueHandling = NullValueHandling.Ignore
-                    });
-
-            File.WriteAllText(
-                Path.Combine(directory, Name + ".gltf"),
-                serializedModel
-            );
-        }
     }
     #endregion
 
@@ -492,7 +296,7 @@ namespace GLTFRevitExport {
 
         //        return bufferData;
         //    }
-        //}
+        }
 
         //static public string ComputeSHA256Hash<T>(T data) {
         //    var binFormatter = new BinaryFormatter();
@@ -511,7 +315,6 @@ namespace GLTFRevitExport {
         //        return sBuilder.ToString();
         //    }
         //}
-
     }
     #endregion
 
@@ -558,4 +361,3 @@ namespace GLTFRevitExport {
     //        }
     //    }
     //}
-}

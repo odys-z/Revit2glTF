@@ -15,6 +15,9 @@ namespace GLTFRevitExport {
     /// Export configurations
     /// </summary>
     public class GLTFExportConfigs {
+        public string GeneratorId;
+        public string CopyrightMessage;
+
         /// <summary>
         /// Stop on errors
         /// </summary>

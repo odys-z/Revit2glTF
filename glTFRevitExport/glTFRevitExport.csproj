@@ -147,17 +147,30 @@
     <Compile Include="Extensions\Extensions.cs" />
     <Compile Include="GLTFExportConfigs.cs" />
     <Compile Include="GLTFExporter.cs" />
+    <Compile Include="GLTF\Types\glTF.cs" />
+    <Compile Include="GLTF\Types\glTFAccessor.cs" />
+    <Compile Include="GLTF\Types\glTFAsset.cs" />
+    <Compile Include="GLTF\Types\glTFAttribute.cs" />
+    <Compile Include="GLTF\Types\glTFBuffer.cs" />
+    <Compile Include="GLTF\Types\glTFBufferView.cs" />
+    <Compile Include="GLTF\BIMExtension\glTFBIMExtras.cs" />
+    <Compile Include="GLTF\Types\glTFExtras.cs" />
+    <Compile Include="GLTF\Types\glTFMaterial.cs" />
+    <Compile Include="GLTF\Types\gltfMesh.cs" />
+    <Compile Include="GLTF\Types\glTFNode.cs" />
+    <Compile Include="GLTF\Types\glTFNodes.cs" />
+    <Compile Include="GLTF\Types\glTFScene.cs" />
     <Compile Include="Logger.cs" />
-    <Compile Include="GLTFTypes\glTF.cs" />
+    <Compile Include="GLTF\Types\_types.cs" />
     <Compile Include="GlTFExportContext.cs" />
-    <Compile Include="Containers.cs" />
-    <Compile Include="GLTFBuilder.cs" />
+    <Compile Include="GLTF\Containers.cs" />
+    <Compile Include="GLTF\GLTFBuilder.cs" />
     <Compile Include="Properties\StringLib.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>StringLib.resx</DependentUpon>
     </Compile>
-    <Compile Include="Util.cs" />
+    <Compile Include="GLTF\Util.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs">

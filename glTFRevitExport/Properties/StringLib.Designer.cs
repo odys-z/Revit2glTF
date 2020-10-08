@@ -61,6 +61,24 @@ namespace GLTFRevitExport.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to GLTFRevitExport.
+        /// </summary>
+        internal static string GeneratorName {
+            get {
+                return ResourceManager.GetString("GeneratorName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Item does not exist in this listed tree.
+        /// </summary>
+        internal static string ItemNotExist {
+            get {
+                return ResourceManager.GetString("ItemNotExist", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to There are not active nodes in this container.
         /// </summary>
         internal static string NoParentNode {
@@ -84,6 +102,15 @@ namespace GLTFRevitExport.Properties {
         internal static string NoSupportedView {
             get {
                 return ResourceManager.GetString("NoSupportedView", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to $root.
+        /// </summary>
+        internal static string RootNodeName {
+            get {
+                return ResourceManager.GetString("RootNodeName", resourceCulture);
             }
         }
     }

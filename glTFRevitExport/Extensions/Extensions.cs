@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 
 using Autodesk.Revit.DB;
 
+using GLTFRevitExport.GLTF;
+
 namespace GLTFRevitExport.Extensions {
     internal static class Extensions {
         /// <summary>

@@ -6,7 +6,9 @@ using System.Linq;
 
 using Autodesk.Revit.DB;
 
+using GLTFRevitExport.GLTF;
 using GLTFRevitExport.Extensions;
+using GLTFRevitExport.Properties;
 
 namespace GLTFRevitExport {
     #region Initialization
@@ -18,6 +20,10 @@ namespace GLTFRevitExport {
             _cfgs = configs is null ? new GLTFExportConfigs() : configs;
             // place the root document on the stack
             _docStack.Push(doc);
+
+            // create a new glTF builder
+            _glTF = new GLTFBuilder(configs.GeneratorId,
+                                    configs.CopyrightMessage);
         }
     }
     #endregion
@@ -38,7 +44,7 @@ namespace GLTFRevitExport {
         /// <summary>
         /// Instance of glTF data structure
         /// </summary>
-        private GLTFBuilder _glTF = new GLTFBuilder();
+        private GLTFBuilder _glTF = null;
 
         /// <summary>
         /// List of processed elements by their unique id
@@ -124,11 +130,11 @@ namespace GLTFRevitExport {
                         return RenderNodeAction.Skip;
 
                     // start a new gltf scene
-                    _glTF.OpenScene();
+                    _glTF.OpenScene(name: view.Name);
 
                     // add a root element (all other elements are its children)
                     // root node contains metadata about the scene e.g. bbox
-                    _glTF.OpenNode(name: "::rootNode::", matrix: null);
+                    _glTF.OpenNode(name: StringLib.RootNodeName, matrix: null);
 
                     Logger.LogElement("+ view begin", view);
                     return RenderNodeAction.Proceed;
