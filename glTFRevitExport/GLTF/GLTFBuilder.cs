@@ -18,7 +18,7 @@ using GLTFRevitExport.GLTF.Types.BIMExtension;
 namespace GLTFRevitExport.GLTF {
     #region Initialization, Completion
     internal sealed partial class GLTFBuilder {
-        internal GLTFBuilder(string generatorId, string copyright) {
+        internal GLTFBuilder(string generatorId = null, string copyright = null) {
             _gltf = new glTF(genertor: generatorId, copyright: copyright);
         }
 
@@ -74,8 +74,11 @@ namespace GLTFRevitExport.GLTF {
     #region Data stacks
     internal sealed partial class GLTFBuilder {
         private glTF _gltf = null;
+        
         private glTFScene peekScene() => _gltf.Scenes.LastOrDefault();
+        
         private glTFNode peekNode() => _gltf.Nodes.LastOrDefault();
+        
         public uint appendNode(string name, double[] matrix, glTFExtras extras) {
             if (peekScene() is glTFScene scene) {
                 // create new node and set base properties
@@ -93,7 +96,6 @@ namespace GLTFRevitExport.GLTF {
             else
                 throw new Exception(StringLib.NoParentScene);
         }
-
     }
     #endregion
 
@@ -139,18 +141,18 @@ namespace GLTFRevitExport.GLTF {
         }
 
         public void UpdateNodeGeometry(GLTFVector[] vertices, GLTFVector[] normals, GLTFFace[] faces) {
-            if (_gltf.Nodes.Peek() is glTFNode parent) {
-                _geoms.Add(
-                    new GLTFGeom {
-                        Vertices = vertices,
-                        Normals = normals,
-                        Faces = faces,
-                        MaterialIndex = _path.MaterialIdx
-                    }
-                );
-            }
-            else
-                throw new Exception(StringLib.NoParentNode);
+            //if (_gltf.Nodes.Peek() is glTFNode parent) {
+            //    _geoms.Add(
+            //        new GLTFGeom {
+            //            Vertices = vertices,
+            //            Normals = normals,
+            //            Faces = faces,
+            //            MaterialIndex = _path.MaterialIdx
+            //        }
+            //    );
+            //}
+            //else
+            //    throw new Exception(StringLib.NoParentNode);
         }
 
         public void CloseNode() => _gltf.Nodes.Close();
