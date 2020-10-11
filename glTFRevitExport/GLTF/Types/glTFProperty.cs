@@ -10,7 +10,7 @@ using GLTFRevitExport.Properties;
 
 namespace GLTFRevitExport.GLTF.Types {
     [Serializable]
-    public abstract class glTFProperty {
+    internal abstract class glTFProperty {
         [JsonProperty("extensions")]
         public Dictionary<string, glTFExtension> Extensions { get; set; }
 

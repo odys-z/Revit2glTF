@@ -4,42 +4,13 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
-
+using System.Web;
 using Autodesk.Revit.DB;
 
 using GLTFRevitExport.GLTF;
 
 namespace GLTFRevitExport.Extensions {
-    internal static class DoubleExtensions {
-        /// <summary>
-        /// Consider a Revit length zero 
-        /// if is smaller than this.
-        /// </summary>
-        const double _eps = 1.0e-9;
-
-        /// <summary>
-        /// Conversion factor from feet to millimetres.
-        /// </summary>
-        const double _feet_to_mm = 25.4 * 12;
-
-        /// <summary>
-        /// Convert double length value from feet to millimetre
-        /// </summary>
-        public static long ToMM(this double d) {
-            if (0 < d) {
-                return _eps > d
-                  ? 0
-                  : (long)(_feet_to_mm * d + 0.5);
-            }
-            else {
-                return _eps > -d
-                  ? 0
-                  : (long)(_feet_to_mm * d - 0.5);
-            }
-        }
-    }
-
-    internal static class RevitExtensions {
+    internal static class APIExtensions {
         /// <summary>
         /// From Jeremy Tammik's RvtVa3c exporter:
         /// </summary>
@@ -67,7 +38,7 @@ namespace GLTFRevitExport.Extensions {
                 or.X.ToMM(), or.Y.ToMM(), or.Z.ToMM(), 1
             };
         }
-    
+
         static public GLTFVector ToGLTF(this XYZ p) {
             return new GLTFVector(x: p.X.ToMM(), y: p.Y.ToMM(), z: p.Z.ToMM());
         }
@@ -76,11 +47,13 @@ namespace GLTFRevitExport.Extensions {
             // TODO: add all categories
             var categories = new List<string>();
             if (e.Category != null)
-                categories.Add($"revit::{e.Category.Name}");
+                categories.Add(
+                        $"revit/{e.Category.Name}".UriEncode()
+                    );
             return categories;
         }
 
-        static public object GetConvertedValue(this Parameter param) {
+        static public object TryGetValue(this Parameter param) {
             switch (param.StorageType) {
                 case StorageType.None: break;
 
@@ -129,7 +102,7 @@ namespace GLTFRevitExport.Extensions {
                 // skip useless names
                 string paramName = param.Definition.Name;
                 // skip useless values
-                var paramValue = param.GetConvertedValue();
+                var paramValue = param.TryGetValue();
                 if (paramValue is null) continue;
                 if (paramValue is int intVal && intVal == -1) continue;
 
@@ -142,7 +115,7 @@ namespace GLTFRevitExport.Extensions {
 
         static public object GetParamValue(this Element e, BuiltInParameter p) {
             if (e.get_Parameter(p) is Parameter param)
-                return param.GetConvertedValue();
+                return param.TryGetValue();
             return null;
         }
 

@@ -130,6 +130,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
@@ -144,7 +145,9 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Extensions\Extensions.cs" />
+    <Compile Include="Extensions\APIExtensions.cs" />
+    <Compile Include="Extensions\DoubleExtensions.cs" />
+    <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="GLTFExportConfigs.cs" />
     <Compile Include="GLTFExporter.cs" />
     <Compile Include="GLTFExtension\Attributes.cs" />
@@ -153,7 +156,6 @@
     <Compile Include="GLTFExtension\glTFBIMExtensionBaseNodeData.cs" />
     <Compile Include="GLTFExtension\glTFBIMExtensionLinkNode.cs" />
     <Compile Include="GLTFExtension\glTFBIMExtensionNode.cs" />
-    <Compile Include="GLTFExtension\glTFBIMExtras.cs" />
     <Compile Include="GLTF\Types\glTF.cs" />
     <Compile Include="GLTF\Types\glTFAccessor.cs" />
     <Compile Include="GLTF\Types\glTFAsset.cs" />

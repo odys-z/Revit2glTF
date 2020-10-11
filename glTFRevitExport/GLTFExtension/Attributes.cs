@@ -8,7 +8,7 @@ using Autodesk.Revit.DB;
 
 namespace GLTFRevitExport.GLTFExtension {
     [AttributeUsage(AttributeTargets.Property)]
-    public class APIBuiltinParametersAttribute : Attribute {
+    internal class APIBuiltinParametersAttribute : Attribute {
         public BuiltInParameter TypeParam { get; private set; }
         public BuiltInParameter InstanceParam { get; private set; }
 

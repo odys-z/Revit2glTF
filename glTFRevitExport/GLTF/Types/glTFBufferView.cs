@@ -9,7 +9,7 @@ namespace GLTFRevitExport.GLTF.Types {
     /// A reference to a subsection of a buffer containing either vector or scalar data.
     /// </summary>
     // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#buffers-and-buffer-views
-    public class glTFBufferView {
+    internal class glTFBufferView {
         /// <summary>
         /// The index of the buffer.
         /// </summary>

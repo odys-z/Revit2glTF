@@ -10,23 +10,8 @@ using GLTFRevitExport.Properties;
 namespace GLTFRevitExport.GLTF {
     #region Initialization, Completion
     internal sealed partial class GLTFBuilder {
-        internal GLTFBuilder(string generatorId = null,
-                             string copyright = null,
-                             glTFExtension ext = null) {
+        internal GLTFBuilder() {
             _gltf = new glTF();
-
-            var assetExts = new Dictionary<string, glTFExtension>();
-            if (ext != null) {
-                assetExts.Add(ext.Name, ext);
-                ensureExtensionUsed(ext);
-            }
-
-            _gltf.Asset = new glTFAsset {
-                Generator = generatorId,
-                Copyright = copyright,
-                Extensions = assetExts.Count > 0 ? assetExts : null
-            };
-
         }
 
         /// <summary>
@@ -81,9 +66,9 @@ namespace GLTFRevitExport.GLTF {
     #region Data stacks
     internal sealed partial class GLTFBuilder {
         private readonly glTF _gltf = null;
-        
+
         private glTFScene peekScene() => _gltf.Scenes.LastOrDefault();
-        
+
         private glTFNode peekNode() => _gltf.Nodes.LastOrDefault();
 
         public void ensureExtensionUsed(glTFExtension ext) {
@@ -121,6 +106,24 @@ namespace GLTFRevitExport.GLTF {
     internal sealed partial class GLTFBuilder {
         public void UseExtension(glTFExtension ext) => ensureExtensionUsed(ext);
 
+        public void OpenAsset(string generatorId, string copyright,
+                              glTFExtension[] exts, glTFExtras extras) {
+            var assetExts = new Dictionary<string, glTFExtension>();
+            if (exts != null) {
+                foreach (var ext in exts)
+                    if (ext != null) {
+                        assetExts.Add(ext.Name, ext);
+                        ensureExtensionUsed(ext);
+                    }
+            }
+
+            _gltf.Asset = new glTFAsset {
+                Generator = generatorId,
+                Copyright = copyright,
+                Extensions = assetExts.Count > 0 ? assetExts : null,
+                Extras = extras
+            };
+        }
         public uint OpenScene(string name, glTFExtension[] exts, glTFExtras extras) {
             _gltf.Scenes.Add(
                 new glTFScene {
@@ -152,12 +155,10 @@ namespace GLTFRevitExport.GLTF {
                 if (currentNode.Children is null)
                     return -1;
 
-                uint idx = _gltf.Nodes.IndexOf(currentNode) + 1;
                 foreach (var childIdx in currentNode.Children) {
                     var node = _gltf.Nodes[childIdx];
                     if (filter(node))
-                        return (int)idx;
-                    idx++;
+                        return (int)childIdx;
                 }
                 return -1;
             }
@@ -229,6 +230,8 @@ namespace GLTFRevitExport.GLTF {
         public void CloseNode() => _gltf.Nodes.Close();
 
         public void CloseScene() { }
+        
+        public void CloseAsset() { }
     }
     #endregion
 
@@ -371,68 +374,68 @@ namespace GLTFRevitExport.GLTF {
 
         //        return bufferData;
         //    }
-        }
-
-        //static public string ComputeSHA256Hash<T>(T data) {
-        //    var binFormatter = new BinaryFormatter();
-        //    var mStream = new MemoryStream();
-        //    binFormatter.Serialize(mStream, data);
-
-        //    using (SHA256 hasher = SHA256.Create()) {
-        //        mStream.Position = 0;
-        //        byte[] byteHash = hasher.ComputeHash(mStream);
-
-        //        var sBuilder = new StringBuilder();
-        //        for (int i = 0; i < byteHash.Length; i++) {
-        //            sBuilder.Append(byteHash[i].ToString("x2"));
-        //        }
-
-        //        return sBuilder.ToString();
-        //    }
-        //}
     }
-    #endregion
 
-    //internal class GLTFBuilder {
+    //static public string ComputeSHA256Hash<T>(T data) {
+    //    var binFormatter = new BinaryFormatter();
+    //    var mStream = new MemoryStream();
+    //    binFormatter.Serialize(mStream, data);
 
-    //    /// <summary>
-    //    /// Stateful, uuid indexable list of all materials in the export.
-    //    /// </summary>
-    //    private IndexedDictionary<glTFMaterial> materialDict = new IndexedDictionary<glTFMaterial>();
-    //    /// <summary>
-    //    /// Hashable container for mesh data, to aid instancing.
-    //    /// </summary>
-    //    private List<MeshContainer> meshContainers = new List<MeshContainer>();
+    //    using (SHA256 hasher = SHA256.Create()) {
+    //        mStream.Position = 0;
+    //        byte[] byteHash = hasher.ComputeHash(mStream);
 
-    //    /// <summary>
-    //    /// Container for the vertex/face/normal information
-    //    /// that will be serialized into a binary format
-    //    /// for the final *.bin files.
-    //    /// </summary>
-    //    public List<glTFBinaryData> binaryFileData = new List<glTFBinaryData>();
-
-    //    /// <summary>
-    //    /// List of all materials referenced by meshes.
-    //    /// </summary>
-    //    public List<glTFMaterial> materials {
-    //        get {
-    //            return materialDict.List;
+    //        var sBuilder = new StringBuilder();
+    //        for (int i = 0; i < byteHash.Length; i++) {
+    //            sBuilder.Append(byteHash[i].ToString("x2"));
     //        }
-    //    }
 
-    //    /// <summary>
-    //    /// Stack maintaining the geometry containers for each
-    //    /// node down the current scene graph branch. These are popped
-    //    /// as we retreat back up the graph.
-    //    /// </summary>
-    //    private Stack<Dictionary<string, GeometryData>> geometryStack = new Stack<Dictionary<string, GeometryData>>();
-
-    //    /// <summary>
-    //    /// The geometry container for the currently open node.
-    //    /// </summary>
-    //    private Dictionary<string, GeometryData> currentGeom {
-    //        get {
-    //            return geometryStack.Peek();
-    //        }
+    //        return sBuilder.ToString();
     //    }
     //}
+}
+#endregion
+
+//internal class GLTFBuilder {
+
+//    /// <summary>
+//    /// Stateful, uuid indexable list of all materials in the export.
+//    /// </summary>
+//    private IndexedDictionary<glTFMaterial> materialDict = new IndexedDictionary<glTFMaterial>();
+//    /// <summary>
+//    /// Hashable container for mesh data, to aid instancing.
+//    /// </summary>
+//    private List<MeshContainer> meshContainers = new List<MeshContainer>();
+
+//    /// <summary>
+//    /// Container for the vertex/face/normal information
+//    /// that will be serialized into a binary format
+//    /// for the final *.bin files.
+//    /// </summary>
+//    public List<glTFBinaryData> binaryFileData = new List<glTFBinaryData>();
+
+//    /// <summary>
+//    /// List of all materials referenced by meshes.
+//    /// </summary>
+//    public List<glTFMaterial> materials {
+//        get {
+//            return materialDict.List;
+//        }
+//    }
+
+//    /// <summary>
+//    /// Stack maintaining the geometry containers for each
+//    /// node down the current scene graph branch. These are popped
+//    /// as we retreat back up the graph.
+//    /// </summary>
+//    private Stack<Dictionary<string, GeometryData>> geometryStack = new Stack<Dictionary<string, GeometryData>>();
+
+//    /// <summary>
+//    /// The geometry container for the currently open node.
+//    /// </summary>
+//    private Dictionary<string, GeometryData> currentGeom {
+//        get {
+//            return geometryStack.Peek();
+//        }
+//    }
+//}

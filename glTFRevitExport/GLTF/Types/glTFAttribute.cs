@@ -9,7 +9,7 @@ namespace GLTFRevitExport.GLTF.Types {
     /// The list of accessors available to the renderer for a particular mesh.
     /// </summary>
     // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#meshes
-    public class glTFAttribute {
+    internal class glTFAttribute {
 
         /// <summary>
         /// The index of the accessor for position data.

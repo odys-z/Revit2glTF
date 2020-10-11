@@ -15,8 +15,8 @@ using GLTFRevitExport.Properties;
 
 namespace GLTFRevitExport.GLTFExtension {
     [Serializable]
-    public class glTFBIMExtensionLinkNode : glTFBIMExtensionBaseNodeData {
-        internal glTFBIMExtensionLinkNode(Element e, Func<string, int> nodeFinder) : base(e, nodeFinder) { }
+    internal class glTFBIMExtensionLinkNode : glTFBIMExtensionBaseNodeData {
+        internal glTFBIMExtensionLinkNode(Element e) : base(e) { }
 
         public override string Type => "link";
     }

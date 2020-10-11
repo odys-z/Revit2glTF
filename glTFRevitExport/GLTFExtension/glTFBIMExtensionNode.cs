@@ -15,8 +15,8 @@ using GLTFRevitExport.Properties;
 
 namespace GLTFRevitExport.GLTFExtension {
     [Serializable]
-    public class glTFBIMExtensionNode : glTFBIMExtensionBaseNodeData {
-        internal glTFBIMExtensionNode(Element e, Func<string, int> nodeFinder) : base(e, nodeFinder) { }
+    internal class glTFBIMExtensionNode : glTFBIMExtensionBaseNodeData {
+        internal glTFBIMExtensionNode(Element e) : base(e) { }
 
         public override string Type => "meta";
     }

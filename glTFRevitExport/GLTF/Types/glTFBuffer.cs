@@ -9,7 +9,7 @@ namespace GLTFRevitExport.GLTF.Types {
     /// A reference to the location and size of binary data.
     /// </summary>
     // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#buffers-and-buffer-views
-    public class glTFBuffer {
+    internal class glTFBuffer {
         /// <summary>
         /// The uri of the buffer.
         /// </summary>

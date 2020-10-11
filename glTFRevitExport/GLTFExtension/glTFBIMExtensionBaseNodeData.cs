@@ -12,24 +12,26 @@ using GLTFRevitExport.Extensions;
 using GLTFRevitExport.GLTF.Types;
 using GLTFRevitExport.GLTF;
 using GLTFRevitExport.Properties;
+using System.Runtime.Serialization;
 
 namespace GLTFRevitExport.GLTFExtension {
     [Serializable]
-    public abstract class glTFBIMExtensionBaseNodeData : glTFBIMExtension {
+    internal abstract class glTFBIMExtensionBaseNodeData : glTFBIMExtension {
         private readonly BuiltInParameter[] excludeBuiltinParams =
             Enum.GetNames(typeof(BuiltInParameter))
                 .Where(x => 
                     x.Contains("_NAME")
                  || x.Contains("NAME_")
-                 || x.Contains("UNIFORMAT_")
-                 || x.Contains("OMNICLASS_")
+                 || x.StartsWith("UNIFORMAT_")
+                 || x.StartsWith("OMNICLASS_")
+                 || x.StartsWith("HOST_ID_")
+                 || x.StartsWith("INSTANCE_FREE_HOST_OFFSET_")
                 )
                 .Select(x => (BuiltInParameter)Enum.Parse(typeof(BuiltInParameter), x))
                 .ToArray();
 
-        internal glTFBIMExtensionBaseNodeData(Element e, Func<string, int> nodeFinder) {
+        internal glTFBIMExtensionBaseNodeData(Element e) {
             bool isType = e is ElementType;
-
             // exclude list for parameters that are processed by this
             // constructor and should not be included in 'this.Properties'
             var excludeParams = new List<BuiltInParameter>(excludeBuiltinParams);
@@ -38,10 +40,10 @@ namespace GLTFRevitExport.GLTFExtension {
             UniqueId = e.UniqueId;
             Taxonomies = e.GetTaxonomies();
             Classes.Add(
-                $"uniformat::{e.GetParamValue(BuiltInParameter.UNIFORMAT_CODE)}"
+                $"uniformat/{e.GetParamValue(BuiltInParameter.UNIFORMAT_CODE)}".UriEncode()
                 );
             Classes.Add(
-                $"omniclass::{e.GetParamValue(BuiltInParameter.OMNICLASS_CODE)}"
+                $"omniclass/{e.GetParamValue(BuiltInParameter.OMNICLASS_CODE)}".UriEncode()
                 );
             
             // set the properties on this object from their associated builtin params
@@ -67,16 +69,9 @@ namespace GLTFRevitExport.GLTFExtension {
                 }
             }
 
-            // use node finder to set references to existing nodes
-            // TODO: is the node already processed?
-            if (nodeFinder != null) {
-                if (e.Document.GetElement(e.LevelId) is Level level) {
-                    var levelNodeIdx = nodeFinder(level.UniqueId);
-                    if (levelNodeIdx >= 0)
-                        Level = (uint)levelNodeIdx;
-                }
-            }
-
+            if (e.Document.GetElement(e.LevelId) is Level level)
+                Level = level.UniqueId;
+            
             Properties = e.GetParamDict(exclude: excludeParams);
         }
 
@@ -134,10 +129,10 @@ namespace GLTFRevitExport.GLTFExtension {
         public string ImageUrl { get; set; }
 
         [JsonProperty("level")]
-        public uint? Level { get; set; }
+        public string Level { get; set; }
 
         [JsonProperty("zones")]
-        public HashSet<uint> Zones { get; set; }
+        public HashSet<string> Zones { get; set; }
 
         [JsonProperty("bounds")]
         public glTFBIMBounds Bounds { get; set; }
@@ -147,10 +142,17 @@ namespace GLTFRevitExport.GLTFExtension {
     }
 
     [Serializable]
-    public class glTFBIMBounds {
+    public class glTFBIMBounds : ISerializable {
         internal glTFBIMBounds(BoundingBoxXYZ bbox) {
             Min = new glTFBIMVector(bbox.Min);
             Max = new glTFBIMVector(bbox.Max);
+        }
+
+        public glTFBIMBounds(SerializationInfo info, StreamingContext context) {
+            var min = (double[])info.GetValue("min", typeof(double[]));
+            Min = new glTFBIMVector(min[0], min[1], min[2]);
+            var max = (double[])info.GetValue("max", typeof(double[]));
+            Max = new glTFBIMVector(max[0], max[1], max[2]);
         }
 
         [JsonProperty("min")]
@@ -162,6 +164,11 @@ namespace GLTFRevitExport.GLTFExtension {
         public void Union(glTFBIMBounds other) {
             Min.ContractTo(other.Min);
             Max.ExpandTo(other.Max);
+        }
+
+        public void GetObjectData(SerializationInfo info, StreamingContext context) {
+            info.AddValue("min", new double[] { Min.X, Min.Y, Min.Z });
+            info.AddValue("max", new double[] { Max.X, Max.Y, Max.Z });
         }
     }
 

@@ -1,22 +1,23 @@
 ﻿using System;
-
+using System.IO;
 using Autodesk.Revit.DB;
-
+using GLTFRevitExport.GLTF.Types;
+using GLTFRevitExport.GLTFExtension;
 using GLTFRevitExport.Properties;
 
 namespace GLTFRevitExport {
     public class GLTFExporter {
-        private readonly GLTFExportConfigs _cfg = null;        
+        private readonly GLTFExportConfigs _cfgs = null;        
         private readonly GLTFExportContext _ctx = null;
 
         public GLTFExporter(Document doc, GLTFExportConfigs configs = null) {
-            _cfg = configs ?? new GLTFExportConfigs();
-            _ctx = new GLTFExportContext(doc, _cfg);
+            _cfgs = configs ?? new GLTFExportConfigs();
+            _ctx = new GLTFExportContext(doc, _cfgs);
         }
 
         public void ExportView(View view, ElementFilter filter = null) {
             var exp = new CustomExporter(view.Document, _ctx) {
-                ShouldStopOnError = _cfg.StopOnErrors
+                ShouldStopOnError = _cfgs.StopOnErrors
             };
 
 #if (REVIT2017 || REVIT2018 || REVIT2019)
@@ -30,7 +31,22 @@ namespace GLTFRevitExport {
 #endif
         }
 
-        public void WriteGLTF(string filename, string directory, ElementFilter filter = null)
-            => _ctx.Write(filename, directory, filter);
+        public void WriteGLTF(string filename, string directory,
+                              ElementFilter filter = null,
+                              Func<object, glTFExtras> extrasBuilder = null) {
+            // ensure filename is really a file name and no extension
+            filename = Path.GetFileNameWithoutExtension(filename);
+
+            // build the glTF
+            var glTF = _ctx.Build(filter, extrasBuilder);
+
+            // pack the glTF data and get the container
+            var container = glTF.Pack(
+                filename: filename,
+                singleBinary: _cfgs.UseSingleBinary
+            );
+
+            container.Write(directory);
+        }
     }
 }

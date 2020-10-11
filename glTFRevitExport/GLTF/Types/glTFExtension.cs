@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 
 namespace GLTFRevitExport.GLTF.Types {
     [Serializable]
-    public abstract class glTFExtension {
+    internal abstract class glTFExtension {
         internal abstract string Name { get; }
 
         // TODO: generate hash

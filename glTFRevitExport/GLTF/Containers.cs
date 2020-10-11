@@ -14,7 +14,7 @@ using Autodesk.Private.InfoCenterLib;
 
 namespace GLTFRevitExport.GLTF {
     [Serializable]
-    public class glTFBinaryBufferSegment {
+    internal class glTFBinaryBufferSegment {
         public List<float> vertexBuffer { get; set; } = new List<float>();
         public List<int> faceVertexIndexBuffer { get; set; } = new List<int>();
 

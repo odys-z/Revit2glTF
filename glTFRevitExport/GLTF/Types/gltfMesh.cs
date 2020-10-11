@@ -9,7 +9,7 @@ namespace GLTFRevitExport.GLTF.Types {
     /// The array of primitives defining the mesh of an object.
     /// </summary>
     // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#meshes
-    public class glTFMesh {
+    internal class glTFMesh {
         public List<glTFMeshPrimitive> primitives { get; set; }
     }
 
@@ -17,7 +17,7 @@ namespace GLTFRevitExport.GLTF.Types {
     /// Properties defining where the GPU should look to find the mesh and material data.
     /// </summary>
     // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#meshes
-    public class glTFMeshPrimitive {
+    internal class glTFMeshPrimitive {
         public glTFAttribute attributes { get; set; }
         public uint indices { get; set; }
         public uint material { get; set; }
@@ -28,7 +28,7 @@ namespace GLTFRevitExport.GLTF.Types {
     /// glTF Mesh 
     /// </summary>
     // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#primitivemode
-    public enum glTFMeshMode {
+    internal enum glTFMeshMode {
         POINTS,
         LINES,
         LINE_LOOP,

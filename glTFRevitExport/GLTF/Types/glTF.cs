@@ -12,7 +12,7 @@ namespace GLTFRevitExport.GLTF.Types {
     /// </summary>
     // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0
     [Serializable]
-    public class glTF {
+    internal class glTF {
         [JsonProperty("asset")]
         public glTFAsset Asset = null;
 

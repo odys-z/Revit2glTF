@@ -15,7 +15,7 @@ using GLTFRevitExport.Properties;
 
 namespace GLTFRevitExport.GLTFExtension {
     [Serializable]
-    public abstract class glTFBIMExtension: glTFExtension {
+    internal abstract class glTFBIMExtension: glTFExtension {
         internal glTFBIMExtension() { }
 
         internal override string Name => StringLib.GLTFExtensionName;

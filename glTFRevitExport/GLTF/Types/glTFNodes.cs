@@ -10,7 +10,7 @@ namespace GLTFRevitExport.GLTF.Types {
     /// <summary>
     /// 
     /// </summary>
-    public class glTFNodes : IEnumerable<glTFNode> {
+    internal class glTFNodes : IEnumerable<glTFNode> {
         private readonly List<glTFNode> _items = new List<glTFNode>();
         private readonly Stack<glTFNode> _openItems = new Stack<glTFNode>();
 
@@ -59,7 +59,7 @@ namespace GLTFRevitExport.GLTF.Types {
         }
     }
 
-    public class glTFNodesEnum : IEnumerator<glTFNode> {
+    internal class glTFNodesEnum : IEnumerator<glTFNode> {
         private glTFNode[] _items;
         private int position = -1;
 

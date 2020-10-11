@@ -9,7 +9,7 @@ namespace GLTFRevitExport.GLTF.Types {
     /// A reference to a subsection of a BufferView containing a particular data type.
     /// </summary>
     // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#accessors
-    public class glTFAccessor {
+    internal class glTFAccessor {
         /// <summary>
         /// The index of the bufferView.
         /// </summary>

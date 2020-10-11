@@ -11,6 +11,8 @@ using System.Windows.Automation.Peers;
 using GLTFRevitExport.Properties;
 using GLTFRevitExport.GLTF.Types;
 using System.Linq;
+using Autodesk.Revit.DB.Structure;
+using Autodesk.Revit.DB.Visual;
 
 namespace GLTFRevitExport {
     #region Initialization
@@ -387,7 +389,12 @@ namespace GLTFRevitExport {
 
         abstract class ExporterBeginAction : ExporterAction {
             protected Element element;
+            
             public ExporterBeginAction(Element e) => element = e;
+
+            public override void Execute(GLTFBuilder gltf) => Execute(gltf, (e) => new glTFExtras());
+            public abstract void Execute(GLTFBuilder gltf, Func<object, glTFExtras> extrasBuilder);
+            
             public bool Passes(ElementFilter filter) {
                 if (element is null)
                     return true;
@@ -401,15 +408,15 @@ namespace GLTFRevitExport {
         class OnViewBeginAction : ExporterBeginAction {
             public OnViewBeginAction(View view) : base(view) { }
 
-            public override void Execute(GLTFBuilder gltf) {
+            public override void Execute(GLTFBuilder gltf, Func<object, glTFExtras> extrasBuilder) {
                 // start a new gltf scene
                 Logger.Log("+ view begin");
                 gltf.OpenScene(
                     name: element.Name,
                     exts: new glTFExtension[] {
-                        new glTFBIMExtensionNode(element, null)
+                        new glTFBIMExtensionNode(element)
                     },
-                    extras: new glTFBIMExtras()
+                    extras: extrasBuilder(element)
                     );
             }
         }
@@ -434,7 +441,7 @@ namespace GLTFRevitExport {
                 _link = link;
             }
 
-            public override void Execute(GLTFBuilder gltf) {
+            public override void Execute(GLTFBuilder gltf, Func<object, glTFExtras> extrasBuilder) {
                 // open a new node and store its id
                 Logger.Log("+ element begin");
 
@@ -448,32 +455,49 @@ namespace GLTFRevitExport {
                     }
                     return false;
                 };
-                // node finder to pass to bim metadata builder
-                Func<string, int> nodeFinder = x => {
-                    targetUniqueId = x;
-                    return gltf.FindChildNode(nodeFilter);
-                };
-
 
                 // create a node for its type
                 // attemp at finding previously created node for this type
                 // but only search children of already open node
-                targetUniqueId = _elementType.UniqueId;
-                var typeNodeIdx = gltf.FindChildNode(nodeFilter);
+                if (_elementType is ElementType elementType) {
+                    targetUniqueId = elementType.UniqueId;
+                    var typeNodeIdx = gltf.FindChildNode(nodeFilter);
 
-                if (typeNodeIdx >= 0) {
-                    gltf.OpenExistingNode((uint)typeNodeIdx);
+                    if (typeNodeIdx >= 0) {
+                        gltf.OpenExistingNode((uint)typeNodeIdx);
+                    }
+                    // otherwise create and open a new node for this type
+                    else {
+                        gltf.OpenNode(
+                            name: elementType.Name,
+                            matrix: null,
+                            exts: new glTFExtension[] {
+                            new glTFBIMExtensionNode(elementType)
+                            },
+                            extras: extrasBuilder(elementType)
+                        );
+                    }
                 }
-                // otherwise create and open a new node for this type
+                // if there is no type, create a custom type
                 else {
-                    gltf.OpenNode(
-                        name: _elementType.Name,
-                        matrix: null,
-                        exts: new glTFExtension[] {
-                            new glTFBIMExtensionNode(_elementType, nodeFinder)
-                        },
-                        extras: new glTFBIMExtras()
-                    );
+                    // TODO: figure out how to create based on the element type
+                    targetUniqueId = element.GetType().ToString();
+                    var typeNodeIdx = gltf.FindChildNode(nodeFilter);
+
+                    if (typeNodeIdx >= 0) {
+                        gltf.OpenExistingNode((uint)typeNodeIdx);
+                    }
+                    // otherwise create and open a new node for this type
+                    else {
+                        gltf.OpenNode(
+                            name: targetUniqueId,
+                            matrix: null,
+                            exts: new glTFExtension[] {
+                                // TODO: what kind of info for the fake type?
+                            },
+                            extras: null
+                        );
+                    }
                 }
 
                 // create a node for this instance
@@ -489,8 +513,8 @@ namespace GLTFRevitExport {
                 else {
                     var bimExt =
                         _link ?
-                        new glTFBIMExtensionLinkNode(element, nodeFinder)
-                            : (glTFExtension)new glTFBIMExtensionNode(element, nodeFinder);
+                        new glTFBIMExtensionLinkNode(element)
+                            : (glTFExtension)new glTFBIMExtensionNode(element);
 
                     var newNodeIdx = gltf.OpenNode(
                         name: element.Name,
@@ -498,12 +522,12 @@ namespace GLTFRevitExport {
                         exts: new glTFExtension[] {
                             bimExt
                         },
-                        extras: new glTFBIMExtras()
+                        extras: extrasBuilder(element)
                     );
 
                     var bbox = element.get_BoundingBox(null);
                     if (bbox != null)
-                        UpdateBounds(
+                        updateBounds(
                             gltf: gltf,
                             idx: newNodeIdx,
                             bounds: new glTFBIMBounds(bbox)
@@ -511,7 +535,7 @@ namespace GLTFRevitExport {
                 }
             }
 
-            private void UpdateBounds(GLTFBuilder gltf, uint idx, glTFBIMBounds bounds) {
+            private void updateBounds(GLTFBuilder gltf, uint idx, glTFBIMBounds bounds) {
                 glTFNode currentNode = gltf.GetNode(idx);
                 if (currentNode.Extensions != null) {
                     foreach (var nodeExt in currentNode.Extensions) {
@@ -523,7 +547,7 @@ namespace GLTFRevitExport {
 
                             int parentIdx = gltf.FindParentNode(idx);
                             if (parentIdx >= 0)
-                                UpdateBounds(gltf, (uint)parentIdx, bimExt.Bounds);
+                                updateBounds(gltf, (uint)parentIdx, bimExt.Bounds);
                         }
                     }
                 }
@@ -570,12 +594,20 @@ namespace GLTFRevitExport {
             return skip;
         }
 
-        private GLTFBuilder build(ElementFilter filter) {
-            var glTF = new GLTFBuilder(
+        internal GLTFBuilder
+        Build(ElementFilter filter, Func<object, glTFExtras> extrasBuilder) {
+            var glTF = new GLTFBuilder();
+
+            // build asset info
+            var doc = _docStack.Last();
+            glTF.OpenAsset(
                 generatorId: _cfgs.GeneratorId ?? StringLib.GLTFGeneratorName,
                 copyright: _cfgs.CopyrightMessage,
-                ext: new glTFBIMExtensionAssetData(_docStack.Last())
-            );
+                exts: new glTFExtension[] {
+                    new glTFBIMExtensionAssetData(doc)
+                },
+                extras: extrasBuilder != null ? extrasBuilder(doc) : null
+                );
 
             // combine default filter with build filter
             ElementFilter actionFilter = null;
@@ -605,11 +637,17 @@ namespace GLTFRevitExport {
                 switch (action) {
                     case ExporterBeginAction beg:
                         if (actionFilter is null) {
-                            beg.Execute(glTF);
+                            if (extrasBuilder != null)
+                                beg.Execute(glTF, extrasBuilder);
+                            else
+                                beg.Execute(glTF);
                             passResults.Push(true);
                         }
                         else if (beg.Passes(actionFilter)) {
-                            beg.Execute(glTF);
+                            if (extrasBuilder != null)
+                                beg.Execute(glTF, extrasBuilder);
+                            else
+                                beg.Execute(glTF);
                             passResults.Push(true);
                         }
                         else
@@ -628,27 +666,9 @@ namespace GLTFRevitExport {
             }
 
             Logger.Log("- end build");
-
+            glTF.CloseAsset();
+            
             return glTF;
-        }
-
-        // Serializes the gltf write out the *.gltf and *.bin files
-        public bool Write(string filename, string directory,
-                          ElementFilter filter = null) {
-            // ensure filename is really a file name and no extension
-            filename = Path.GetFileNameWithoutExtension(filename);
-
-            // build the glTF
-            var glTF = build(filter);
-
-            // pack the glTF data and get the container
-            var container = glTF.Pack(
-                filename: filename,
-                singleBinary: _cfgs.UseSingleBinary
-            );
-
-            container.Write(directory);
-            return true;
         }
     }
     #endregion
