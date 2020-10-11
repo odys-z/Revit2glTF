@@ -14,10 +14,10 @@ namespace GLTFRevitExport.GLTF.Types {
     [Serializable]
     internal class glTF {
         [JsonProperty("asset")]
-        public glTFAsset Asset = null;
+        public glTFAsset Asset { get; set; } = null;
 
         [JsonProperty("extensionsUsed")]
-        public HashSet<string> ExtensionsUsed;
+        public HashSet<string> ExtensionsUsed { get; set; }
 
         [JsonProperty("scenes")]
         public List<glTFScene> Scenes { get; set; } = new List<glTFScene>();

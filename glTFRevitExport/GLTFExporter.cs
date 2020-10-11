@@ -2,7 +2,7 @@
 using System.IO;
 using Autodesk.Revit.DB;
 using GLTFRevitExport.GLTF.Types;
-using GLTFRevitExport.GLTFExtension;
+using GLTFRevitExport.GLTFExtensions;
 using GLTFRevitExport.Properties;
 
 namespace GLTFRevitExport {
@@ -17,7 +17,7 @@ namespace GLTFRevitExport {
 
         public void ExportView(View view, ElementFilter filter = null) {
             var exp = new CustomExporter(view.Document, _ctx) {
-                ShouldStopOnError = _cfgs.StopOnErrors
+                ShouldStopOnError = true
             };
 
 #if (REVIT2017 || REVIT2018 || REVIT2019)
@@ -31,14 +31,15 @@ namespace GLTFRevitExport {
 #endif
         }
 
-        public void WriteGLTF(string filename, string directory,
-                              ElementFilter filter = null,
-                              Func<object, glTFExtras> extrasBuilder = null) {
+        public string[] BuildGLTF(string filename, string directory,
+                                  ElementFilter filter = null,
+                                  Func<object, string[]> zoneFinder = null,
+                                  Func<object, glTFExtras> extrasBuilder = null) {
             // ensure filename is really a file name and no extension
             filename = Path.GetFileNameWithoutExtension(filename);
 
             // build the glTF
-            var glTF = _ctx.Build(filter, extrasBuilder);
+            var glTF = _ctx.Build(filter, zoneFinder, extrasBuilder);
 
             // pack the glTF data and get the container
             var container = glTF.Pack(
@@ -46,7 +47,7 @@ namespace GLTFRevitExport {
                 singleBinary: _cfgs.UseSingleBinary
             );
 
-            container.Write(directory);
+            return container.Write(directory);
         }
     }
 }

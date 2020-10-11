@@ -2,26 +2,22 @@
 using System.Threading;
 using Autodesk.Revit.DB;
 
-namespace GLTFRevitExport {
-    /// <summary>
-    /// Up direction for geometry export
-    /// </summary>
-    public enum UpDirection {
-        Y,
-        Z
-    }
+using GLTFRevitExport.Properties;
 
+namespace GLTFRevitExport {
     /// <summary>
     /// Export configurations
     /// </summary>
     public class GLTFExportConfigs {
-        public string GeneratorId;
-        public string CopyrightMessage;
+        /// <summary>
+        /// Id of the generator
+        /// </summary>
+        public string GeneratorId => StringLib.GLTFGeneratorName;
 
         /// <summary>
-        /// Stop on errors
+        /// Generator copyright message
         /// </summary>
-        public bool StopOnErrors { get; set; } = true;
+        public string CopyrightMessage;
 
         /// <summary>
         /// Export all buffers into a single binary file
@@ -34,26 +30,18 @@ namespace GLTFRevitExport {
         public bool ExportLinkedModels { get; set; } = true;
 
         /// <summary>
-        /// Export all the properties for each element
+        /// Export Revit type data
         /// </summary>
-        public bool ExportProperties { get; set; } = true;
+        public bool ExportHierarchy { get; set; } = true;
 
         /// <summary>
-        /// Export all the type properties for each element type
+        /// Export Revit element parameter data
         /// </summary>
-        public bool ExportTypeProperties { get; set; } = true;
+        public bool ExportParameters { get; set; } = true;
 
         /// <summary>
-        /// Up direction
+        /// Cancellation toke for cancelling the export progress
         /// </summary>
-        public UpDirection UpAxis { get; set; } = UpDirection.Y;
-
-        /// <summary>
-        /// Filter to filter the scene data. Only elements passing this filter
-        /// will be included in the export
-        /// </summary>
-        public ElementFilter Filter;
-
         public CancellationToken CancelToken;
     }
 }

@@ -14,7 +14,7 @@ using Autodesk.Private.InfoCenterLib;
 
 namespace GLTFRevitExport.GLTF {
     [Serializable]
-    internal class glTFBinaryBufferSegment {
+    internal class GLTFBinaryBufferSegment {
         public List<float> vertexBuffer { get; set; } = new List<float>();
         public List<int> faceVertexIndexBuffer { get; set; } = new List<int>();
 
@@ -128,7 +128,7 @@ namespace GLTFRevitExport.GLTF {
     /// </summary>
     internal class GLTFBinaryData {
         public string name { get; set; }
-        public glTFBinaryBufferSegment contents { get; set; }
+        public GLTFBinaryBufferSegment contents { get; set; }
         public int vertexAccessorIndex { get; set; }
         public int indexAccessorIndex { get; set; }
     }
@@ -138,7 +138,7 @@ namespace GLTFRevitExport.GLTF {
         public glTF Model;
         public List<GLTFBinaryData> Binaries;
 
-        public void Write(string directory) {
+        public string[] Write(string directory) {
             // write the container data
             // write the *.bin files
             //if () {
@@ -179,10 +179,14 @@ namespace GLTFRevitExport.GLTF {
                         NullValueHandling = NullValueHandling.Ignore
                     });
 
+            var gltfFile = Path.Combine(directory, Name + ".gltf");
+            var outputs = new List<string> { gltfFile };
             File.WriteAllText(
-                Path.Combine(directory, Name + ".gltf"),
+                gltfFile,
                 serializedModel
             );
+
+            return outputs.ToArray();
         }
     }
 

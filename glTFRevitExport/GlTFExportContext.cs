@@ -6,7 +6,7 @@ using Autodesk.Revit.DB;
 
 using GLTFRevitExport.GLTF;
 using GLTFRevitExport.Extensions;
-using GLTFRevitExport.GLTFExtension;
+using GLTFRevitExport.GLTFExtensions;
 using System.Windows.Automation.Peers;
 using GLTFRevitExport.Properties;
 using GLTFRevitExport.GLTF.Types;
@@ -16,13 +16,13 @@ using Autodesk.Revit.DB.Visual;
 
 namespace GLTFRevitExport {
     #region Initialization
-    public sealed partial class GLTFExportContext : IExportContext {
+    internal sealed partial class GLTFExportContext : IExportContext {
         public GLTFExportContext(Document doc, GLTFExportConfigs configs = null) {
-            // reset the logger
-            Logger.Reset();
             // ensure base configs
             _cfgs = configs is null ? new GLTFExportConfigs() : configs;
 
+            // reset stacks
+            resetExporter();
             // place doc on the stack
             _docStack.Push(doc);
         }
@@ -30,19 +30,23 @@ namespace GLTFRevitExport {
     #endregion
 
     #region Data Stacks
-    public sealed partial class GLTFExportContext : IExportContext {
+    internal sealed partial class GLTFExportContext : IExportContext {
         /// <summary>
         /// Configurations for the active export
         /// </summary>
         private readonly GLTFExportConfigs _cfgs = new GLTFExportConfigs();
-
-        private readonly Queue<ExporterAction> _actions = new Queue<ExporterAction>();
 
         /// <summary>
         /// Document stack to hold the documents being processed.
         /// A stack is used to allow processing nested documents (linked docs)
         /// </summary>
         private readonly Stack<Document> _docStack = new Stack<Document>();
+
+        /// <summary>
+        /// Queue of actions collected during export. These actions are then
+        /// played back on each .Build call to create separate glTF outputs
+        /// </summary>
+        private readonly Queue<ExporterAction> _actions = new Queue<ExporterAction>();
 
         /// <summary>
         /// List of processed elements by their unique id
@@ -57,7 +61,7 @@ namespace GLTFRevitExport {
     #endregion
 
     #region IExportContext Implementation
-    public sealed partial class GLTFExportContext : IExportContext {
+    internal sealed partial class GLTFExportContext : IExportContext {
         #region Start, Stop, Cancel
         // Runs once at beginning of export. Sets up the root node
         // and scene.
@@ -122,8 +126,10 @@ namespace GLTFRevitExport {
 
         // This method is invoked many times during the export process
         public bool IsCanceled() {
-            if (_cfgs.CancelToken.IsCancellationRequested)
+            if (_cfgs.CancelToken.IsCancellationRequested) {
                 Logger.Log("x cancelled");
+                resetExporter();
+            }
             return _cfgs.CancelToken.IsCancellationRequested;
         }
         #endregion
@@ -166,6 +172,15 @@ namespace GLTFRevitExport {
                 Element e = doc.GetElement(eid);
                 ElementType et = doc.GetElement(e.GetTypeId()) as ElementType;
 
+                // TODO: take a look at elements that have no type
+                // skipping these for now
+                // DB.CurtainGridLine
+                // DB.Opening
+                // DB.FaceSplitter
+                // DB.Spatial
+                if (et is null)
+                    goto SkipElementLabel;
+                
                 // TODO: fix inneficiency in getting linked elements multiple times
                 // this affects links that have multiple instances
                 // remember glTF nodes can not have multiple parents
@@ -185,7 +200,7 @@ namespace GLTFRevitExport {
                         if (_cfgs.ExportLinkedModels) {
                             Logger.LogElement("+ element (link) begin", e);
                             var lixform =
-                                linkInst.GetTotalTransform().ToColumnMajorMatrix();
+                                linkInst.GetTotalTransform().ToGLTF();
                             _actions.Enqueue(
                                 new OnElementBeginAction(
                                     element: e,
@@ -204,7 +219,7 @@ namespace GLTFRevitExport {
                     case FamilyInstance famInst:
                         Logger.LogElement("+ element (instance) begin", e);
                         var fixform =
-                            famInst.GetTotalTransform().ToColumnMajorMatrix();
+                            famInst.GetTotalTransform().ToGLTF();
                         _actions.Enqueue(
                             new OnElementBeginAction(
                                 element: famInst,
@@ -382,8 +397,11 @@ namespace GLTFRevitExport {
     #endregion
 
     #region Exporter Actions
-    public sealed partial class GLTFExportContext : IExportContext {
+    internal sealed partial class GLTFExportContext : IExportContext {
         abstract class ExporterAction {
+            public bool IncludeHierarchy = true;
+            public bool IncludeProperties = true;
+            
             public abstract void Execute(GLTFBuilder gltf);
         }
 
@@ -392,8 +410,28 @@ namespace GLTFRevitExport {
             
             public ExporterBeginAction(Element e) => element = e;
 
-            public override void Execute(GLTFBuilder gltf) => Execute(gltf, (e) => new glTFExtras());
-            public abstract void Execute(GLTFBuilder gltf, Func<object, glTFExtras> extrasBuilder);
+            public override void Execute(GLTFBuilder gltf)
+                => Execute(
+                    gltf,
+                    (e) => {
+                        if (e is FamilyInstance famInst) {
+                            var zones = new HashSet<string>();
+                            if (famInst.FromRoom != null)
+                                zones.Add(famInst.FromRoom.GetId());
+                            if (famInst.ToRoom != null)
+                                zones.Add(famInst.ToRoom.GetId());
+                            if (famInst.Room != null)
+                                zones.Add(famInst.Room.GetId());
+                            if (famInst.Space != null)
+                                zones.Add(famInst.Space.GetId());
+                        }
+                        return null;
+                    },
+                    (e) => new glTFExtras()
+                    );
+            public abstract void Execute(GLTFBuilder gltf,
+                                         Func<object, string[]> zoneFinder,
+                                         Func<object, glTFExtras> extrasBuilder);
             
             public bool Passes(ElementFilter filter) {
                 if (element is null)
@@ -408,13 +446,15 @@ namespace GLTFRevitExport {
         class OnViewBeginAction : ExporterBeginAction {
             public OnViewBeginAction(View view) : base(view) { }
 
-            public override void Execute(GLTFBuilder gltf, Func<object, glTFExtras> extrasBuilder) {
+            public override void Execute(GLTFBuilder gltf,
+                                         Func<object, string[]> zoneFinder,
+                                         Func<object, glTFExtras> extrasBuilder) {
                 // start a new gltf scene
                 Logger.Log("+ view begin");
                 gltf.OpenScene(
                     name: element.Name,
                     exts: new glTFExtension[] {
-                        new glTFBIMExtensionNode(element)
+                        new glTFBIMExtensionNode(element, zoneFinder, IncludeProperties)
                     },
                     extras: extrasBuilder(element)
                     );
@@ -441,17 +481,19 @@ namespace GLTFRevitExport {
                 _link = link;
             }
 
-            public override void Execute(GLTFBuilder gltf, Func<object, glTFExtras> extrasBuilder) {
+            public override void Execute(GLTFBuilder gltf,
+                                         Func<object, string[]> zoneFinder,
+                                         Func<object, glTFExtras> extrasBuilder) {
                 // open a new node and store its id
                 Logger.Log("+ element begin");
 
                 // node filter to pass to gltf builder
-                string targetUniqueId = string.Empty;
+                string targetId = string.Empty;
                 Func<glTFNode, bool> nodeFilter = node => {
                     if (node.Extensions != null) {
                         foreach (var nodeExt in node.Extensions)
                             if (nodeExt.Value is glTFBIMExtensionBaseNodeData bimExt)
-                                return bimExt.UniqueId == targetUniqueId;
+                                return bimExt.Id == targetId;
                     }
                     return false;
                 };
@@ -459,8 +501,8 @@ namespace GLTFRevitExport {
                 // create a node for its type
                 // attemp at finding previously created node for this type
                 // but only search children of already open node
-                if (_elementType is ElementType elementType) {
-                    targetUniqueId = elementType.UniqueId;
+                if (IncludeHierarchy) {
+                    targetId = _elementType.GetId();
                     var typeNodeIdx = gltf.FindChildNode(nodeFilter);
 
                     if (typeNodeIdx >= 0) {
@@ -469,33 +511,12 @@ namespace GLTFRevitExport {
                     // otherwise create and open a new node for this type
                     else {
                         gltf.OpenNode(
-                            name: elementType.Name,
+                            name: _elementType.Name,
                             matrix: null,
                             exts: new glTFExtension[] {
-                            new glTFBIMExtensionNode(elementType)
+                            new glTFBIMExtensionNode(_elementType, null, IncludeProperties)
                             },
-                            extras: extrasBuilder(elementType)
-                        );
-                    }
-                }
-                // if there is no type, create a custom type
-                else {
-                    // TODO: figure out how to create based on the element type
-                    targetUniqueId = element.GetType().ToString();
-                    var typeNodeIdx = gltf.FindChildNode(nodeFilter);
-
-                    if (typeNodeIdx >= 0) {
-                        gltf.OpenExistingNode((uint)typeNodeIdx);
-                    }
-                    // otherwise create and open a new node for this type
-                    else {
-                        gltf.OpenNode(
-                            name: targetUniqueId,
-                            matrix: null,
-                            exts: new glTFExtension[] {
-                                // TODO: what kind of info for the fake type?
-                            },
-                            extras: null
+                            extras: extrasBuilder(_elementType)
                         );
                     }
                 }
@@ -503,7 +524,7 @@ namespace GLTFRevitExport {
                 // create a node for this instance
                 // attemp at finding previously created node for this instance
                 // but only search children of already open type node
-                targetUniqueId = element.UniqueId;
+                targetId = element.GetId();
                 var instNodeIdx = gltf.FindChildNode(nodeFilter);
 
                 if (instNodeIdx >= 0) {
@@ -513,8 +534,8 @@ namespace GLTFRevitExport {
                 else {
                     var bimExt =
                         _link ?
-                        new glTFBIMExtensionLinkNode(element)
-                            : (glTFExtension)new glTFBIMExtensionNode(element);
+                        new glTFBIMExtensionLinkNode(element, zoneFinder, IncludeProperties)
+                            : (glTFExtension)new glTFBIMExtensionNode(element, zoneFinder, IncludeProperties);
 
                     var newNodeIdx = gltf.OpenNode(
                         name: element.Name,
@@ -560,7 +581,8 @@ namespace GLTFRevitExport {
                 // close instance node
                 gltf.CloseNode();
                 // close type node
-                gltf.CloseNode();
+                if (IncludeHierarchy)
+                    gltf.CloseNode();
             }
         }
 
@@ -570,7 +592,7 @@ namespace GLTFRevitExport {
     #endregion
 
     #region Utility Methods
-    public sealed partial class GLTFExportContext : IExportContext {
+    internal sealed partial class GLTFExportContext : IExportContext {
         /// <summary>
         /// Determine if given element should be skipped
         /// </summary>
@@ -582,29 +604,38 @@ namespace GLTFRevitExport {
                 Logger.Log(skipMessage);
                 skip = true;
             }
-            else if (e != null && _processed.Contains(e.UniqueId)) {
+            else if (e != null && _processed.Contains(e.GetId())) {
                 Logger.LogElement(skipMessage, e);
                 skip = true;
             }
             else
-                _processed.Add(e.UniqueId);
+                _processed.Add(e.GetId());
 
             if (setFlag)
                 _skipElement = skip;
             return skip;
         }
 
-        internal GLTFBuilder
-        Build(ElementFilter filter, Func<object, glTFExtras> extrasBuilder) {
+        private void resetExporter() {
+            // reset the logger
+            Logger.Reset();
+            _actions.Clear();
+            _processed.Clear();
+            _skipElement = false;
+        }
+
+        internal GLTFBuilder Build(ElementFilter filter,
+                                   Func<object, string[]> zoneFinder,
+                                   Func<object, glTFExtras> extrasBuilder) {
             var glTF = new GLTFBuilder();
 
             // build asset info
             var doc = _docStack.Last();
             glTF.OpenAsset(
-                generatorId: _cfgs.GeneratorId ?? StringLib.GLTFGeneratorName,
+                generatorId: _cfgs.GeneratorId,
                 copyright: _cfgs.CopyrightMessage,
                 exts: new glTFExtension[] {
-                    new glTFBIMExtensionAssetData(doc)
+                    new glTFBIMExtensionDocumentData(doc, _cfgs.ExportParameters)
                 },
                 extras: extrasBuilder != null ? extrasBuilder(doc) : null
                 );
@@ -634,18 +665,21 @@ namespace GLTFRevitExport {
             // so it knows whether to run the corresponding END action or not
             var passResults = new Stack<bool>();
             foreach (var action in _actions) {
+                action.IncludeHierarchy = _cfgs.ExportHierarchy;
+                action.IncludeProperties = _cfgs.ExportParameters;
+
                 switch (action) {
                     case ExporterBeginAction beg:
                         if (actionFilter is null) {
                             if (extrasBuilder != null)
-                                beg.Execute(glTF, extrasBuilder);
+                                beg.Execute(glTF, zoneFinder, extrasBuilder);
                             else
                                 beg.Execute(glTF);
                             passResults.Push(true);
                         }
                         else if (beg.Passes(actionFilter)) {
                             if (extrasBuilder != null)
-                                beg.Execute(glTF, extrasBuilder);
+                                beg.Execute(glTF, zoneFinder, extrasBuilder);
                             else
                                 beg.Execute(glTF);
                             passResults.Push(true);

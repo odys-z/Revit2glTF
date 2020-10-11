@@ -13,10 +13,11 @@ using GLTFRevitExport.GLTF.Types;
 using GLTFRevitExport.GLTF;
 using GLTFRevitExport.Properties;
 
-namespace GLTFRevitExport.GLTFExtension {
+namespace GLTFRevitExport.GLTFExtensions {
     [Serializable]
     internal class glTFBIMExtensionLinkNode : glTFBIMExtensionBaseNodeData {
-        internal glTFBIMExtensionLinkNode(Element e) : base(e) { }
+        internal glTFBIMExtensionLinkNode(Element e, Func<object, string[]> zoneFinder, bool includeParameters = true)
+            : base(e, zoneFinder, includeParameters) { }
 
         public override string Type => "link";
     }

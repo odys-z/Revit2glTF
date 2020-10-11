@@ -150,12 +150,12 @@
     <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="GLTFExportConfigs.cs" />
     <Compile Include="GLTFExporter.cs" />
-    <Compile Include="GLTFExtension\Attributes.cs" />
-    <Compile Include="GLTFExtension\glTFBIMExtension.cs" />
-    <Compile Include="GLTFExtension\glTFBIMExtensionAssetData.cs" />
-    <Compile Include="GLTFExtension\glTFBIMExtensionBaseNodeData.cs" />
-    <Compile Include="GLTFExtension\glTFBIMExtensionLinkNode.cs" />
-    <Compile Include="GLTFExtension\glTFBIMExtensionNode.cs" />
+    <Compile Include="GLTFExtensions\Attributes.cs" />
+    <Compile Include="GLTFExtensions\glTFBIMExtension.cs" />
+    <Compile Include="GLTFExtensions\glTFBIMExtensionDocumentData.cs" />
+    <Compile Include="GLTFExtensions\glTFBIMExtensionBaseNodeData.cs" />
+    <Compile Include="GLTFExtensions\glTFBIMExtensionLinkNode.cs" />
+    <Compile Include="GLTFExtensions\glTFBIMExtensionNode.cs" />
     <Compile Include="GLTF\Types\glTF.cs" />
     <Compile Include="GLTF\Types\glTFAccessor.cs" />
     <Compile Include="GLTF\Types\glTFAsset.cs" />
@@ -166,7 +166,7 @@
     <Compile Include="GLTF\Types\glTFExtension.cs" />
     <Compile Include="GLTF\Types\glTFExtras.cs" />
     <Compile Include="GLTF\Types\glTFMaterial.cs" />
-    <Compile Include="GLTF\Types\gltfMesh.cs" />
+    <Compile Include="GLTF\Types\glTFMesh.cs" />
     <Compile Include="GLTF\Types\glTFNode.cs" />
     <Compile Include="GLTF\Types\glTFNodes.cs" />
     <Compile Include="GLTF\Types\glTFProperty.cs" />
@@ -180,7 +180,6 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>StringLib.resx</DependentUpon>
     </Compile>
-    <Compile Include="GLTF\Util.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs">

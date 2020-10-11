@@ -7,15 +7,23 @@ using Autodesk.Revit.DB;
 
 using GLTFRevitExport.Extensions;
 
-namespace GLTFRevitExport.GLTFExtension {
+namespace GLTFRevitExport.GLTFExtensions {
     [Serializable]
-    internal class glTFBIMExtensionAssetData : glTFBIMExtension {
-        internal glTFBIMExtensionAssetData(Document d) : base() {
-            App = "revit";
+    internal class glTFBIMExtensionDocumentData : glTFBIMExtension {
+        internal glTFBIMExtensionDocumentData(Document d, bool includeParameters = true) : base() {
+            App = getAppName(d);
             Id = getDocumentId(d).ToString();
             Title = d.Title;
             Source = d.PathName;
-            Properties = getProjectInfo(d);
+            if (includeParameters)
+                Properties = getProjectInfo(d);
+        }
+
+        private static string getAppName(Document doc) {
+            var app = doc.Application;
+            var hostName = app.VersionName;
+            hostName = hostName.Replace(app.VersionNumber, app.SubVersionNumber);
+            return $"{hostName} {app.VersionBuild}";
         }
 
         private static Guid getDocumentId(Document doc) {
@@ -43,7 +51,7 @@ namespace GLTFRevitExport.GLTFExtension {
                 }) {
                     var param = pinfo.get_Parameter(paramId);
                     if (param != null) {
-                        var paramValue = param.TryGetValue();
+                        var paramValue = param.ToGLTF();
                         if (paramValue != null)
                             docProps.Add(param.Definition.Name, paramValue);
                     }
@@ -51,7 +59,7 @@ namespace GLTFRevitExport.GLTFExtension {
 
                 foreach (Parameter param in pinfo.Parameters)
                     if (param.Id.IntegerValue > 0) {
-                        var paramValue = param.TryGetValue();
+                        var paramValue = param.ToGLTF();
                         if (paramValue != null)
                             docProps.Add(param.Definition.Name, paramValue);
                     }
@@ -59,7 +67,7 @@ namespace GLTFRevitExport.GLTFExtension {
             return docProps;
         }
 
-        public override string Type => "model";
+        public override string Type => "document";
 
         [JsonProperty("application")]
         public string App { get; set; }

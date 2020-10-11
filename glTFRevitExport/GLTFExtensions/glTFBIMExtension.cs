@@ -13,12 +13,14 @@ using GLTFRevitExport.GLTF.Types;
 using GLTFRevitExport.GLTF;
 using GLTFRevitExport.Properties;
 
-namespace GLTFRevitExport.GLTFExtension {
+namespace GLTFRevitExport.GLTFExtensions {
     [Serializable]
-    internal class glTFBIMExtensionNode : glTFBIMExtensionBaseNodeData {
-        internal glTFBIMExtensionNode(Element e) : base(e) { }
+    internal abstract class glTFBIMExtension: glTFExtension {
+        internal glTFBIMExtension() { }
 
-        public override string Type => "meta";
+        internal override string Name => StringLib.GLTFExtensionName;
+
+        [JsonProperty("$type")]
+        public abstract string Type { get; } 
     }
-
 }
