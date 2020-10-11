@@ -14,7 +14,7 @@ namespace GLTFRevitExport.GLTF.Types {
     /// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#asset
     /// </summary>
     [Serializable]
-    public class glTFAsset {
+    public class glTFAsset : glTFProperty {
         [JsonProperty("version")]
         public string Version = "2.0";
 

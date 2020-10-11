@@ -13,15 +13,11 @@ namespace GLTFRevitExport.GLTF.Types {
     // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0
     [Serializable]
     public class glTF {
-        public glTF(string genertor = null, string copyright = null) {
-            Asset = new glTFAsset {
-                Generator = genertor,
-                Copyright = copyright
-            };
-        }
-
         [JsonProperty("asset")]
         public glTFAsset Asset = null;
+
+        [JsonProperty("extensionsUsed")]
+        public HashSet<string> ExtensionsUsed;
 
         [JsonProperty("scenes")]
         public List<glTFScene> Scenes { get; set; } = new List<glTFScene>();

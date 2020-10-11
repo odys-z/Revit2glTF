@@ -6,17 +6,18 @@ using GLTFRevitExport.Properties;
 
 namespace GLTFRevitExport {
     public class GLTFExporter {
-        private GLTFExportConfigs _cfg = null;        
-        private GLTFExportContext _ctx = null;
+        private readonly GLTFExportConfigs _cfg = null;        
+        private readonly GLTFExportContext _ctx = null;
 
-        public GLTFExporter(GLTFExportConfigs configs = null) {
+        public GLTFExporter(Document doc, GLTFExportConfigs configs = null) {
             _cfg = configs ?? new GLTFExportConfigs();
+            _ctx = new GLTFExportContext(doc, _cfg);
         }
 
         public void ExportView(View view, ElementFilter filter = null) {
-            _ctx = new GLTFExportContext(view.Document, _cfg);
-            var exp = new CustomExporter(view.Document, _ctx);
-            exp.ShouldStopOnError = _cfg.StopOnErrors;
+            var exp = new CustomExporter(view.Document, _ctx) {
+                ShouldStopOnError = _cfg.StopOnErrors
+            };
 
 #if (REVIT2017 || REVIT2018 || REVIT2019)
             if (view is View3D view3d)

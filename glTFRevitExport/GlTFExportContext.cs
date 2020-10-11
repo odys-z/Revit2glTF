@@ -1,16 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
 
 using Autodesk.Revit.DB;
 
 using GLTFRevitExport.GLTF;
 using GLTFRevitExport.Extensions;
+using GLTFRevitExport.GLTFExtension;
+using System.Windows.Automation.Peers;
 using GLTFRevitExport.Properties;
-using GLTFRevitExport.GLTF.Types.BIMExtension;
-using System.Runtime.CompilerServices;
+using GLTFRevitExport.GLTF.Types;
+using System.Linq;
 
 namespace GLTFRevitExport {
     #region Initialization
@@ -20,12 +20,9 @@ namespace GLTFRevitExport {
             Logger.Reset();
             // ensure base configs
             _cfgs = configs is null ? new GLTFExportConfigs() : configs;
-            // place the root document on the stack
-            _docStack.Push(doc);
 
-            // create a new glTF builder
-            _glTF = new GLTFBuilder(configs.GeneratorId,
-                                    configs.CopyrightMessage);
+            // place doc on the stack
+            _docStack.Push(doc);
         }
     }
     #endregion
@@ -35,30 +32,25 @@ namespace GLTFRevitExport {
         /// <summary>
         /// Configurations for the active export
         /// </summary>
-        private GLTFExportConfigs _cfgs = new GLTFExportConfigs();
+        private readonly GLTFExportConfigs _cfgs = new GLTFExportConfigs();
 
-        private Queue<ExporterAction> _actions = new Queue<ExporterAction>();
+        private readonly Queue<ExporterAction> _actions = new Queue<ExporterAction>();
 
         /// <summary>
         /// Document stack to hold the documents being processed.
         /// A stack is used to allow processing nested documents (linked docs)
         /// </summary>
-        private Stack<Document> _docStack = new Stack<Document>();
-
-        /// <summary>
-        /// Instance of glTF data structure
-        /// </summary>
-        private GLTFBuilder _glTF = null;
+        private readonly Stack<Document> _docStack = new Stack<Document>();
 
         /// <summary>
         /// List of processed elements by their unique id
         /// </summary>
-        private List<string> _processed = new List<string>();
+        private readonly List<string> _processed = new List<string>();
 
         /// <summary>
         /// Flag to mark current node as skipped
         /// </summary>
-        private bool _skipped = false;
+        private bool _skipElement = false;
     }
     #endregion
 
@@ -70,7 +62,17 @@ namespace GLTFRevitExport {
         public bool Start() {
             // Do not need to do anything here
             // _glTF is already instantiated
-            Logger.Log("+ start");
+            Logger.Log("+ start collect");
+
+            // reset other stacks
+            _processed.Clear();
+            _skipElement = false;
+
+            var doc = _docStack.Last();
+            _docStack.Clear();
+            // place the root document on the stack
+            _docStack.Push(doc);
+
             return true;
         }
 
@@ -113,7 +115,7 @@ namespace GLTFRevitExport {
             //    }
             //}
 
-            Logger.Log("- end");
+            Logger.Log("- end collect");
         }
 
         // This method is invoked many times during the export process
@@ -135,7 +137,7 @@ namespace GLTFRevitExport {
                         return RenderNodeAction.Skip;
 
                     // if active doc and view is valid
-                    _actions.Enqueue(new OnViewBeginAction(view));
+                    _actions.Enqueue(new OnViewBeginAction(view: view));
 
                     Logger.LogElement("+ view begin", view);
                     return RenderNodeAction.Proceed;
@@ -146,53 +148,11 @@ namespace GLTFRevitExport {
         }
 
         public void OnViewEnd(ElementId elementId) {
-            if (_skipped)
-                _skipped = false;
+            if (_skipElement)
+                _skipElement = false;
             else {
                 Logger.Log("- view end");
                 _actions.Enqueue(new OnViewEndAction());
-            }
-        }
-        #endregion
-
-        #region Linked Models
-        public RenderNodeAction OnLinkBegin(LinkNode node) {
-            if (_docStack.Peek() is Document doc) {
-                // grab link data from node
-                var link = doc.GetElement(node.GetSymbolId());
-
-                if (_cfgs.ExportLinkedModels) {
-                    if (recordOrSkip(link, "x duplicate link", setFlag: true))
-                        return RenderNodeAction.Skip;
-
-                    var xform = node.GetTransform();
-                    _actions.Enqueue(
-                        new OnLinkBeginAction(link, xform.ToColumnMajorMatrix())
-                        );
-
-                    // store the link document
-                    // all other element calls belong to this linked model
-                    // and will use this doc to grab data
-                    _docStack.Push(node.GetDocument());
-
-                    Logger.LogElement("+ link begin", link);
-                    return RenderNodeAction.Proceed;
-                }
-                else
-                    Logger.LogElement("~ exclude links", link);
-            }
-            return RenderNodeAction.Skip;
-        }
-
-        public void OnLinkEnd(LinkNode node) {
-            if (_skipped)
-                _skipped = false;
-            else {
-                if (_cfgs.ExportLinkedModels) {
-                    Logger.Log("- link end");
-                    _actions.Enqueue(new OnLinkEndAction());
-                    _docStack.Pop();
-                }
             }
         }
         #endregion
@@ -202,25 +162,104 @@ namespace GLTFRevitExport {
         public RenderNodeAction OnElementBegin(ElementId eid) {
             if (_docStack.Peek() is Document doc) {
                 Element e = doc.GetElement(eid);
+                ElementType et = doc.GetElement(e.GetTypeId()) as ElementType;
 
-                // check if this element has been processed before
-                if (recordOrSkip(e, "x duplicate element", setFlag: true))
-                    return RenderNodeAction.Skip;
+                // TODO: fix inneficiency in getting linked elements multiple times
+                // this affects links that have multiple instances
+                // remember glTF nodes can not have multiple parents
+                // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#nodes-and-hierarchy
+                if (!doc.IsLinked) {
+                    // check if this element has been processed before
+                    if (recordOrSkip(e, "x duplicate element", setFlag: true))
+                        return RenderNodeAction.Skip;
+                }
 
-                _actions.Enqueue(new OnElementBeginAction(e));
+                // Begin: Element
+                switch (e) {
+                    case View _:
+                        goto SkipElementLabel;
 
-                Logger.LogElement("+ element begin", e);
+                    case RevitLinkInstance linkInst:
+                        if (_cfgs.ExportLinkedModels) {
+                            Logger.LogElement("+ element (link) begin", e);
+                            var lixform =
+                                linkInst.GetTotalTransform().ToColumnMajorMatrix();
+                            _actions.Enqueue(
+                                new OnElementBeginAction(
+                                    element: e,
+                                    type: et,
+                                    xform: lixform,
+                                    link: true
+                                    )
+                                );
+                            break;
+                        }
+                        else {
+                            Logger.Log("~ exclude link element");
+                            goto SkipElementLabel;
+                        }
+
+                    case FamilyInstance famInst:
+                        Logger.LogElement("+ element (instance) begin", e);
+                        var fixform =
+                            famInst.GetTotalTransform().ToColumnMajorMatrix();
+                        _actions.Enqueue(
+                            new OnElementBeginAction(
+                                element: famInst,
+                                type: et,
+                                xform: fixform
+                                )
+                            );
+                        break;
+
+                    case Element generic:
+                        var c = e.Category;
+                        if (c is null) {
+                            Logger.LogElement($"+ element (generic) begin", e);
+                            _actions.Enqueue(
+                                new OnElementBeginAction(
+                                    element: generic,
+                                    type: et,
+                                    xform: null
+                                    )
+                                );
+                        }
+                        else {
+                            if (c.IsCategory(BuiltInCategory.OST_Cameras)) {
+                                // TODO: enqueue camera node
+                                goto SkipElementLabel;
+                            }
+                            else {
+                                var cname = c.Name.ToLower();
+                                Logger.LogElement($"+ element ({cname}) begin", e);
+                                _actions.Enqueue(
+                                    new OnElementBeginAction(
+                                        element: generic,
+                                        type: et,
+                                        xform: null
+                                        )
+                                    );
+                            }
+                        }
+                        break;
+                }
+
                 return RenderNodeAction.Proceed;
             }
+            return RenderNodeAction.Skip;
+
+        SkipElementLabel:
+            _skipElement = true;
             return RenderNodeAction.Skip;
         }
 
         // Runs at the end of an element being processed, after all other calls for that element.
         public void OnElementEnd(ElementId eid) {
-            if (_skipped)
-                _skipped = false;
+            if (_skipElement)
+                _skipElement = false;
             else {
                 Logger.Log("- element end");
+                // end the element
                 _actions.Enqueue(new OnElementEndAction());
             }
         }
@@ -229,17 +268,45 @@ namespace GLTFRevitExport {
         // after OnElementBegin. We're using it here to maintain the transform
         // stack for that element's heirarchy.
         public RenderNodeAction OnInstanceBegin(InstanceNode node) {
-            //Logger.Log("+ instance start");
-            //Logger.Log("> transform");
-            //_glTF.UpdateNodeMatrix(
-            //    node.GetTransform().ToColumnMajorMatrix()
-            //    );
+            Logger.Log("+ instance start");
+            Logger.Log("> transform");
             return RenderNodeAction.Proceed;
         }
 
         // do nothing. OnElementClose will close the element later
         public void OnInstanceEnd(InstanceNode node) {
-            //Logger.Log("- instance end");
+            Logger.Log("- instance end");
+        }
+        #endregion
+
+        #region Linked Models
+        public RenderNodeAction OnLinkBegin(LinkNode node) {
+            if (_docStack.Peek() is Document) {
+                if (_cfgs.ExportLinkedModels) {
+                    // Link element info is processed by the OnElement before
+                    // we will just push the linked doc in the stack
+                    // so all subsequent calls to OnElement can grab the element
+                    // from the linked document correctly
+                    _docStack.Push(node.GetDocument());
+
+                    Logger.Log("+ link document begin");
+                    return RenderNodeAction.Proceed;
+                }
+                else
+                    Logger.Log("~ exclude link document");
+            }
+            return RenderNodeAction.Skip;
+        }
+
+        public void OnLinkEnd(LinkNode node) {
+            if (_skipElement)
+                _skipElement = false;
+            else {
+                if (_cfgs.ExportLinkedModels) {
+                    Logger.Log("- link document end");
+                    _docStack.Pop();
+                }
+            }
         }
         #endregion
 
@@ -274,11 +341,10 @@ namespace GLTFRevitExport {
             //}
         }
 
-
         // provides access to the DB.Face that includes the polymesh
         // can be used to extract more information from the actual face
         public RenderNodeAction OnFaceBegin(FaceNode node) {
-            //Logger.Log("+ face begin");
+            Logger.Log("+ face begin");
             return RenderNodeAction.Proceed;
         }
 
@@ -295,7 +361,7 @@ namespace GLTFRevitExport {
         }
 
         public void OnFaceEnd(FaceNode node) {
-            //Logger.Log("- face end");
+            Logger.Log("- face end");
         }
         #endregion
 
@@ -319,31 +385,32 @@ namespace GLTFRevitExport {
             public abstract void Execute(GLTFBuilder gltf);
         }
 
-        abstract class ExporterBeginAction: ExporterAction {
+        abstract class ExporterBeginAction : ExporterAction {
             protected Element element;
             public ExporterBeginAction(Element e) => element = e;
-            public bool Passes(ElementFilter filter) => filter.PassesFilter(element);
+            public bool Passes(ElementFilter filter) {
+                if (element is null)
+                    return true;
+                return filter.PassesFilter(element);
+            }
         }
 
         abstract class ExporterEndAction : ExporterAction {
         }
 
-        class OnViewBeginAction : ExporterBeginAction {             
-            public OnViewBeginAction(View v) : base(v) { }
+        class OnViewBeginAction : ExporterBeginAction {
+            public OnViewBeginAction(View view) : base(view) { }
 
             public override void Execute(GLTFBuilder gltf) {
                 // start a new gltf scene
-                gltf.OpenScene(name: element.Name);
-
-                // add a root element (all other elements are its children)
-                // root node contains metadata about the scene e.g. bbox
-                gltf.OpenNode(
-                    name: StringLib.RootNodeName,
-                    matrix: null,
-                    extras: new glTFBIMExtras(element)
-                );
-
                 Logger.Log("+ view begin");
+                gltf.OpenScene(
+                    name: element.Name,
+                    exts: new glTFExtension[] {
+                        new glTFBIMExtensionNode(element, null)
+                    },
+                    extras: new glTFBIMExtras()
+                    );
             }
         }
 
@@ -354,59 +421,127 @@ namespace GLTFRevitExport {
             }
         }
 
-        class OnLinkBeginAction : ExporterBeginAction {
-            private double[] _xform;
-
-            public OnLinkBeginAction(Element link, double[] xform) : base(link) {
-                _xform = xform;
-            }
-
-            public override void Execute(GLTFBuilder gltf) {
-                // open a new gltf link node
-                Logger.Log("+ link begin");
-                gltf.OpenNode(
-                    name: element.Name,
-                    matrix: _xform,
-                    extras: new glTFBIMExtras(element)
-                );
-            }
-        }
-
-        class OnLinkEndAction : ExporterEndAction {
-            public override void Execute(GLTFBuilder gltf) {
-                Logger.Log("- link end");
-                gltf.CloseNode();
-            }
-        }
-
         class OnElementBeginAction : ExporterBeginAction {
-            public OnElementBeginAction(Element e) : base(e) { }
-            
+            private readonly double[] _xform;
+            private readonly bool _link;
+            private readonly ElementType _elementType;
+
+            public OnElementBeginAction(Element element, ElementType type,
+                                        double[] xform, bool link = false)
+                : base(element) {
+                _elementType = type;
+                _xform = xform;
+                _link = link;
+            }
+
             public override void Execute(GLTFBuilder gltf) {
                 // open a new node and store its id
-                gltf.OpenNode(
-                    name: element.Name,
-                    matrix: null,
-                    extras: new glTFBIMExtras(element)
-                );
+                Logger.Log("+ element begin");
+
+                // node filter to pass to gltf builder
+                string targetUniqueId = string.Empty;
+                Func<glTFNode, bool> nodeFilter = node => {
+                    if (node.Extensions != null) {
+                        foreach (var nodeExt in node.Extensions)
+                            if (nodeExt.Value is glTFBIMExtensionBaseNodeData bimExt)
+                                return bimExt.UniqueId == targetUniqueId;
+                    }
+                    return false;
+                };
+                // node finder to pass to bim metadata builder
+                Func<string, int> nodeFinder = x => {
+                    targetUniqueId = x;
+                    return gltf.FindChildNode(nodeFilter);
+                };
+
+
+                // create a node for its type
+                // attemp at finding previously created node for this type
+                // but only search children of already open node
+                targetUniqueId = _elementType.UniqueId;
+                var typeNodeIdx = gltf.FindChildNode(nodeFilter);
+
+                if (typeNodeIdx >= 0) {
+                    gltf.OpenExistingNode((uint)typeNodeIdx);
+                }
+                // otherwise create and open a new node for this type
+                else {
+                    gltf.OpenNode(
+                        name: _elementType.Name,
+                        matrix: null,
+                        exts: new glTFExtension[] {
+                            new glTFBIMExtensionNode(_elementType, nodeFinder)
+                        },
+                        extras: new glTFBIMExtras()
+                    );
+                }
+
+                // create a node for this instance
+                // attemp at finding previously created node for this instance
+                // but only search children of already open type node
+                targetUniqueId = element.UniqueId;
+                var instNodeIdx = gltf.FindChildNode(nodeFilter);
+
+                if (instNodeIdx >= 0) {
+                    gltf.OpenExistingNode((uint)instNodeIdx);
+                }
+                // otherwise create and open a new node for this type
+                else {
+                    var bimExt =
+                        _link ?
+                        new glTFBIMExtensionLinkNode(element, nodeFinder)
+                            : (glTFExtension)new glTFBIMExtensionNode(element, nodeFinder);
+
+                    var newNodeIdx = gltf.OpenNode(
+                        name: element.Name,
+                        matrix: _xform,
+                        exts: new glTFExtension[] {
+                            bimExt
+                        },
+                        extras: new glTFBIMExtras()
+                    );
+
+                    var bbox = element.get_BoundingBox(null);
+                    if (bbox != null)
+                        UpdateBounds(
+                            gltf: gltf,
+                            idx: newNodeIdx,
+                            bounds: new glTFBIMBounds(bbox)
+                        );
+                }
+            }
+
+            private void UpdateBounds(GLTFBuilder gltf, uint idx, glTFBIMBounds bounds) {
+                glTFNode currentNode = gltf.GetNode(idx);
+                if (currentNode.Extensions != null) {
+                    foreach (var nodeExt in currentNode.Extensions) {
+                        if (nodeExt.Value is glTFBIMExtensionBaseNodeData bimExt) {
+                            if (bimExt.Bounds != null)
+                                bimExt.Bounds.Union(bounds);
+                            else
+                                bimExt.Bounds = bounds;
+
+                            int parentIdx = gltf.FindParentNode(idx);
+                            if (parentIdx >= 0)
+                                UpdateBounds(gltf, (uint)parentIdx, bimExt.Bounds);
+                        }
+                    }
+                }
             }
         }
 
         class OnElementEndAction : ExporterEndAction {
             public override void Execute(GLTFBuilder gltf) {
                 Logger.Log("- element end");
+                // close instance node
+                gltf.CloseNode();
+                // close type node
                 gltf.CloseNode();
             }
         }
 
-        //class OnInstanceBeginAction : ExporterAction { InstanceNode Node { get; set; } }
-        //class OnInstanceEndAction : ExporterAction { InstanceNode Node { get; set; } }
         //class OnMaterialAction : ExporterAction { MaterialNode Node { get; set; } }
-        //class OnFaceBeginAction : ExporterAction { FaceNode Node { get; set; } }
-        //class OnFaceEndAction : ExporterAction { FaceNode Node { get; set; } }
         //class OnPolymeshAction : ExporterAction { PolymeshTopology Polymesh { get; set; } }
-        //class OnRPCAction : ExporterAction { RPCNode Node { get; set; } }
-        //class OnLightAction : ExporterAction { LightNode Node { get; set; } }
     }
     #endregion
 
@@ -431,32 +566,35 @@ namespace GLTFRevitExport {
                 _processed.Add(e.UniqueId);
 
             if (setFlag)
-                _skipped = skip;
+                _skipElement = skip;
             return skip;
         }
 
         private GLTFBuilder build(ElementFilter filter) {
-            var glTF = new GLTFBuilder();
-            
-            Logger.Stage = LoggerStage.Build;
-
-            // always include these categories no matter the build filter
-            ElementFilter actionFilter = new ElementMulticategoryFilter(
-                new List<BuiltInCategory> {
-                    BuiltInCategory.OST_RvtLinks,
-                    BuiltInCategory.OST_Views
-                }
+            var glTF = new GLTFBuilder(
+                generatorId: _cfgs.GeneratorId ?? StringLib.GLTFGeneratorName,
+                copyright: _cfgs.CopyrightMessage,
+                ext: new glTFBIMExtensionAssetData(_docStack.Last())
             );
 
             // combine default filter with build filter
+            ElementFilter actionFilter = null;
             if (filter != null) {
                 actionFilter = new LogicalOrFilter(
                     new List<ElementFilter> {
-                        actionFilter,
+                        // always include these categories no matter the build filter
+                        new ElementMulticategoryFilter(
+                            new List<BuiltInCategory> {
+                                BuiltInCategory.OST_RvtLinks,
+                                BuiltInCategory.OST_Views
+                            }
+                        ),
                         filter
                     }
                 );
             }
+
+            Logger.Log("+ start build");
 
             // filter and process each action
             // the loop tests each BEGIN action with a filter
@@ -464,16 +602,20 @@ namespace GLTFRevitExport {
             // so it knows whether to run the corresponding END action or not
             var passResults = new Stack<bool>();
             foreach (var action in _actions) {
-                switch(action) {
+                switch (action) {
                     case ExporterBeginAction beg:
-                        if (beg.Passes(actionFilter)) {
+                        if (actionFilter is null) {
+                            beg.Execute(glTF);
+                            passResults.Push(true);
+                        }
+                        else if (beg.Passes(actionFilter)) {
                             beg.Execute(glTF);
                             passResults.Push(true);
                         }
                         else
                             passResults.Push(false);
                         break;
-                    
+
                     case ExporterEndAction end:
                         if (passResults.Pop())
                             end.Execute(glTF);
@@ -484,7 +626,9 @@ namespace GLTFRevitExport {
                         break;
                 }
             }
-            
+
+            Logger.Log("- end build");
+
             return glTF;
         }
 

@@ -207,48 +207,4 @@ namespace GLTFRevitExport.GLTF
     //        }
     //    }
     //}
-
-    //class Node : glTFNode {
-    //    public int index;
-    //    public string id;
-    //    public bool isFinalized = false;
-    //    public Element element;
-
-    //    public Node(Element elem, int index, bool exportProperties = true, bool isInstance = false, string heirarchyFormat = "") {
-    //        Debug.WriteLine(String.Format("{1}  Creating new node: {0}", elem, heirarchyFormat));
-
-    //        this.element = elem;
-    //        this.name = Util.ElementDescription(elem);
-    //        this.id = isInstance ? elem.UniqueId + "::" + Guid.NewGuid().ToString() : elem.UniqueId;
-    //        this.index = index;
-    //        Debug.WriteLine(String.Format("{1}    Name:{0}", this.name, heirarchyFormat));
-
-    //        if (exportProperties) {
-    //            // get the extras for this element
-    //            glTFExtras extras = new glTFExtras();
-    //            extras.UniqueId = elem.UniqueId;
-
-    //            //var properties = Util.GetElementProperties(elem, true);
-    //            //if (properties != null) extras.Properties = properties;
-    //            extras.Properties = Util.GetElementProperties(elem, true);
-    //            this.extras = extras;
-    //        }
-    //        Debug.WriteLine(String.Format("{0}    Exported Properties", heirarchyFormat));
-    //    }
-    //    public Node(int index) {
-    //        this.name = "::rootNode::";
-    //        this.id = System.Guid.NewGuid().ToString();
-    //        this.index = index;
-    //    }
-
-    //    public glTFNode ToGLTFNode() {
-    //        glTFNode node = new glTFNode();
-    //        node.name = this.name;
-    //        node.mesh = this.mesh;
-    //        node.matrix = this.matrix;
-    //        node.extras = this.extras;
-    //        node.children = this.children;
-    //        return node;
-    //    }
-    //}
 }

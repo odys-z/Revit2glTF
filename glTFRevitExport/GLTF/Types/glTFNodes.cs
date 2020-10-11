@@ -11,8 +11,12 @@ namespace GLTFRevitExport.GLTF.Types {
     /// 
     /// </summary>
     public class glTFNodes : IEnumerable<glTFNode> {
-        private List<glTFNode> _items = new List<glTFNode>();
-        private Stack<glTFNode> _openItems = new Stack<glTFNode>();
+        private readonly List<glTFNode> _items = new List<glTFNode>();
+        private readonly Stack<glTFNode> _openItems = new Stack<glTFNode>();
+
+        public glTFNode this[uint index] => _items[(int)index];
+
+        public uint IndexOf(glTFNode node) => (uint)_items.IndexOf(node);
 
         public glTFNode Peek() => _openItems.Count > 0 ? _openItems.Peek() : null;
 
@@ -24,7 +28,7 @@ namespace GLTFRevitExport.GLTF.Types {
             glTFNode openItem = Peek();
             if (openItem is glTFNode parent) {
                 if (parent.Children is null)
-                    parent.Children = new List<uint>();
+                    parent.Children = new HashSet<uint>();
                 parent.Children.Add(itemIndex);
             }
             return itemIndex;
@@ -41,6 +45,10 @@ namespace GLTFRevitExport.GLTF.Types {
             if (_openItems.Count > 0)
                 _openItems.Pop();
         }
+
+        public bool Contains(glTFNode node) => _items.Contains(node);
+
+        public bool Contains(uint idx) => idx < _items.Count;
 
         public IEnumerator<glTFNode> GetEnumerator() {
             return new glTFNodesEnum(_items);

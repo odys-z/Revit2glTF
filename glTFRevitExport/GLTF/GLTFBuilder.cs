@@ -1,25 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.IO;
-using System.Security.Cryptography;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Text;
 
-using Newtonsoft.Json;
 using Autodesk.Revit.DB;
 
 using GLTFRevitExport.GLTF.Types;
 using GLTFRevitExport.Properties;
-using System.Data;
-using System.Runtime.CompilerServices;
-using GLTFRevitExport.GLTF.Types.BIMExtension;
 
 namespace GLTFRevitExport.GLTF {
     #region Initialization, Completion
     internal sealed partial class GLTFBuilder {
-        internal GLTFBuilder(string generatorId = null, string copyright = null) {
-            _gltf = new glTF(genertor: generatorId, copyright: copyright);
+        internal GLTFBuilder(string generatorId = null,
+                             string copyright = null,
+                             glTFExtension ext = null) {
+            _gltf = new glTF();
+
+            var assetExts = new Dictionary<string, glTFExtension>();
+            if (ext != null) {
+                assetExts.Add(ext.Name, ext);
+                ensureExtensionUsed(ext);
+            }
+
+            _gltf.Asset = new glTFAsset {
+                Generator = generatorId,
+                Copyright = copyright,
+                Extensions = assetExts.Count > 0 ? assetExts : null
+            };
+
         }
 
         /// <summary>
@@ -73,22 +80,20 @@ namespace GLTFRevitExport.GLTF {
 
     #region Data stacks
     internal sealed partial class GLTFBuilder {
-        private glTF _gltf = null;
+        private readonly glTF _gltf = null;
         
         private glTFScene peekScene() => _gltf.Scenes.LastOrDefault();
         
         private glTFNode peekNode() => _gltf.Nodes.LastOrDefault();
-        
-        public uint appendNode(string name, double[] matrix, glTFExtras extras) {
-            if (peekScene() is glTFScene scene) {
-                // create new node and set base properties
-                var node = new glTFNode() {
-                    Name = name ?? "undefined",
-                    Matrix = matrix,
-                    Extras = extras
-                };
 
-                var idx = _gltf.Nodes.Append(node);
+        public void ensureExtensionUsed(glTFExtension ext) {
+            if (_gltf.ExtensionsUsed is null)
+                _gltf.ExtensionsUsed = new HashSet<string>();
+            _gltf.ExtensionsUsed.Add(ext.Name);
+        }
+
+        public uint ensureNodeInScene(uint idx) {
+            if (peekScene() is glTFScene scene) {
                 if (!_gltf.Nodes.IsOpen())
                     scene.Nodes.Add(idx);
                 return idx;
@@ -96,19 +101,85 @@ namespace GLTFRevitExport.GLTF {
             else
                 throw new Exception(StringLib.NoParentScene);
         }
+
+        public uint appendNode(string name, double[] matrix, glTFExtension[] exts, glTFExtras extras) {
+            // create new node and set base properties
+            var node = new glTFNode() {
+                Name = name ?? "undefined",
+                Matrix = matrix,
+                Extensions = exts?.ToDictionary(x => x.Name, x => x),
+                Extras = extras
+            };
+
+            var idx = _gltf.Nodes.Append(node);
+            return ensureNodeInScene(idx);
+        }
     }
     #endregion
 
     #region Builders
     internal sealed partial class GLTFBuilder {
-        public uint OpenScene(string name) {
-            _gltf.Scenes.Add(new glTFScene { Name = name });
+        public void UseExtension(glTFExtension ext) => ensureExtensionUsed(ext);
+
+        public uint OpenScene(string name, glTFExtension[] exts, glTFExtras extras) {
+            _gltf.Scenes.Add(
+                new glTFScene {
+                    Name = name,
+                    Extensions = exts?.ToDictionary(x => x.Name, x => x),
+                    Extras = extras
+                }
+                );
             return (uint)_gltf.Scenes.Count - 1;
         }
 
-        public void OpenNode(string name, double[] matrix, glTFExtras extras) {
-            var idx = appendNode(name, matrix, extras);
+        public uint OpenNode(string name, double[] matrix, glTFExtension[] exts, glTFExtras extras) {
+            var idx = appendNode(name, matrix, exts, extras);
             _gltf.Nodes.Open(idx);
+            return idx;
+        }
+
+        public glTFNode GetNode(uint idx) => _gltf.Nodes[idx];
+
+        public int FindNode(Func<glTFNode, bool> filter) {
+            foreach (var node in _gltf.Nodes)
+                if (filter(node))
+                    return (int)_gltf.Nodes.IndexOf(node);
+            return -1;
+        }
+
+        public int FindChildNode(Func<glTFNode, bool> filter) {
+            if (_gltf.Nodes.Peek() is glTFNode currentNode) {
+                if (currentNode.Children is null)
+                    return -1;
+
+                uint idx = _gltf.Nodes.IndexOf(currentNode) + 1;
+                foreach (var childIdx in currentNode.Children) {
+                    var node = _gltf.Nodes[childIdx];
+                    if (filter(node))
+                        return (int)idx;
+                    idx++;
+                }
+                return -1;
+            }
+            else
+                return FindNode(filter);
+        }
+
+        public int FindParentNode(uint idx) {
+            foreach (var node in _gltf.Nodes)
+                if (node.Children != null && node.Children.Contains(idx))
+                    return (int)_gltf.Nodes.IndexOf(node);
+            return -1;
+        }
+
+        public uint OpenExistingNode(uint idx) {
+            if (_gltf.Nodes.Contains(idx)) {
+                ensureNodeInScene(idx);
+                _gltf.Nodes.Open(idx);
+                return idx;
+            }
+            else
+                throw new Exception(StringLib.NodeNotExist);
         }
 
         public void UpdateNodeMatrix(double[] matrix) {
@@ -119,7 +190,7 @@ namespace GLTFRevitExport.GLTF {
         }
 
         public void UpdateNodeGeometryMaterial(string name, Color color = null, double transparency = 0.0) {
-            if (_gltf.Nodes.Peek() is glTFNode parent) {
+            if (_gltf.Nodes.Peek() is glTFNode) {
                 // TODO: add this to materials or use existing
                 var material = new glTFMaterial() {
                     Name = name,
@@ -163,7 +234,7 @@ namespace GLTFRevitExport.GLTF {
 
     #region Utils
     internal sealed partial class GLTFBuilder {
-        private Logger _logger = new Logger();
+        private readonly Logger _logger = new Logger();
 
         ///// <summary>
         ///// Takes the intermediate geometry data and performs the calculations

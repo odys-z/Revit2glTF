@@ -13,6 +13,28 @@ using GLTFRevitExport.Properties;
 using Autodesk.Private.InfoCenterLib;
 
 namespace GLTFRevitExport.GLTF {
+    [Serializable]
+    public class glTFBinaryBufferSegment {
+        public List<float> vertexBuffer { get; set; } = new List<float>();
+        public List<int> faceVertexIndexBuffer { get; set; } = new List<int>();
+
+    }
+
+    //public class HashedType {
+    //    public string hashcode { get; set; }
+    //}
+
+    //public class MeshContainer : HashedType {
+    //    //public string hashcode { get; set; }
+    //    public glTFMesh contents { get; set; }
+    //}
+
+    //public class GridParameters {
+    //    public List<double> origin { get; set; }
+    //    public List<double> direction { get; set; }
+    //    public double length { get; set; }
+    //}
+
     /// <summary>
     /// An integer-based 3D point class
     /// </summary>
@@ -99,9 +121,6 @@ namespace GLTFRevitExport.GLTF {
             };
         }
     }
-
-
-
 
 
     /// <summary>

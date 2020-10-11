@@ -61,11 +61,20 @@ namespace GLTFRevitExport.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to EXT_bim_metadata.
+        /// </summary>
+        internal static string GLTFExtensionName {
+            get {
+                return ResourceManager.GetString("GLTFExtensionName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to GLTFRevitExport.
         /// </summary>
-        internal static string GeneratorName {
+        internal static string GLTFGeneratorName {
             get {
-                return ResourceManager.GetString("GeneratorName", resourceCulture);
+                return ResourceManager.GetString("GLTFGeneratorName", resourceCulture);
             }
         }
         
@@ -75,6 +84,15 @@ namespace GLTFRevitExport.Properties {
         internal static string ItemNotExist {
             get {
                 return ResourceManager.GetString("ItemNotExist", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Node does not exist.
+        /// </summary>
+        internal static string NodeNotExist {
+            get {
+                return ResourceManager.GetString("NodeNotExist", resourceCulture);
             }
         }
         
@@ -102,15 +120,6 @@ namespace GLTFRevitExport.Properties {
         internal static string NoSupportedView {
             get {
                 return ResourceManager.GetString("NoSupportedView", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to $root.
-        /// </summary>
-        internal static string RootNodeName {
-            get {
-                return ResourceManager.GetString("RootNodeName", resourceCulture);
             }
         }
     }

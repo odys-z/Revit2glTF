@@ -12,7 +12,7 @@ namespace GLTFRevitExport.GLTF.Types {
     /// </summary>
     // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#nodes-and-hierarchy
     [Serializable]
-    public class glTFNode {
+    public class glTFNode: glTFProperty {
         /// <summary>
         /// The user-defined name of this object
         /// </summary>
@@ -35,12 +35,6 @@ namespace GLTFRevitExport.GLTF.Types {
         /// The indices of this node's children.
         /// </summary>
         [JsonProperty("children")]
-        public List<uint> Children { get; set; }
-
-        /// <summary>
-        /// The extras describing this node.
-        /// </summary>
-        [JsonProperty("extras")]
-        public glTFExtras Extras { get; set; }
+        public HashSet<uint> Children { get; set; }
     }
 }
