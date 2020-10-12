@@ -12,12 +12,24 @@ namespace GLTFRevitExport.GLTF.Types {
     /// </summary>
     // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#materials
     [Serializable]
-    internal class glTFMaterial {
+    internal class glTFMaterial : glTFProperty {
         [JsonProperty("name")]
         public string Name { get; set; }
 
         [JsonProperty("pbrMetallicRoughness")]
         public glTFPBRMetallicRoughness PBRMetallicRoughness { get; set; }
+
+        // TODO: override
+        public override int GetHashCode() {
+            return base.GetHashCode();
+        }
+
+        public override bool Equals(object obj) {
+            if (obj is glTFMaterial other)
+                return Name == other.Name
+                    && PBRMetallicRoughness.Equals(other.PBRMetallicRoughness);
+            return false;
+        }
     }
 
     /// <summary>
@@ -27,12 +39,25 @@ namespace GLTFRevitExport.GLTF.Types {
     [Serializable]
     internal class glTFPBRMetallicRoughness {
         [JsonProperty("baseColorFactor")]
-        public List<float> BaseColorFactor { get; set; }
+        public float[] BaseColorFactor { get; set; }
 
         [JsonProperty("metallicFactor")]
         public float MetallicFactor { get; set; }
 
         [JsonProperty("roughnessFactor")]
         public float RoughnessFactor { get; set; }
+
+        // TODO: override
+        public override int GetHashCode() {
+            return base.GetHashCode();
+        }
+
+        public override bool Equals(object obj) {
+            if (obj is glTFPBRMetallicRoughness other)
+                return BaseColorFactor.SequenceEqual(other.BaseColorFactor)
+                    && MetallicFactor == other.MetallicFactor
+                    && RoughnessFactor == other.RoughnessFactor;
+            return false;
+        }
     }
 }

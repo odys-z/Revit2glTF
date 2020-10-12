@@ -5,21 +5,41 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
+
 using Autodesk.Revit.DB;
 
-using GLTFRevitExport.GLTF;
+using GLTFRevitExport.Containers;
 
 namespace GLTFRevitExport.Extensions {
     internal static class APIExtensions {
         static public string GetId(this Element e) => e?.UniqueId;
+
+        public static string GetId(this Color c)
+            => (
+            "#"
+            + c.Red.ToString("X2")
+            + c.Blue.ToString("X2")
+            + c.Green.ToString("X2")
+            ).ToLower();
+
+        public static bool Compare(this Color left, Color right)
+            => left.Red == right.Red
+            && left.Blue == right.Blue
+            && left.Green == right.Green;
 
         /// <summary>
         /// From Jeremy Tammik's RvtVa3c exporter:
         /// </summary>
         // https://github.com/va3c/RvtVa3c
         // Return an integer value for a Revit Color.
-        public static int ToGLTF(this Color color)
-            => color.Red << 16 | color.Green << 8 | color.Blue;
+        public static float[] ToGLTF(this Color color, float transparency) {
+            return new float[] {
+                color.Red / 255f,
+                color.Green / 255f,
+                color.Blue / 255f,
+                1f - (float)transparency
+            };
+        }
 
         /// <summary>
         /// Convert Revit transform to floating-point 4x4 transformation
@@ -73,7 +93,19 @@ namespace GLTFRevitExport.Extensions {
             return null;
         }
 
+        static public GLTFVector ToGLTF(this XYZ p) {
+            return new GLTFVector(
+                x: p.X.ToGLTFLength(),
+                y: p.Y.ToGLTFLength(),
+                z: p.Z.ToGLTFLength()
+            );
+        }
+
+        static public GLTFFace ToGLTF(this PolymeshFacet f) {
+            return new GLTFFace(v1: f.V1, v2: f.V2, v3: f.V3);
+        }
+        
         public static bool IsCategory(this Category c, BuiltInCategory bic)
-            => c.Id.IntegerValue == (int)bic;
+        => c.Id.IntegerValue == (int)bic;
     }
 }

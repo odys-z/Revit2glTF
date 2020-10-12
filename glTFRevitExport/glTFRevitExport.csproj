@@ -145,6 +145,9 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Containers\GLTFFace.cs" />
+    <Compile Include="Containers\GLTFMesh.cs" />
+    <Compile Include="Containers\GLTFVector.cs" />
     <Compile Include="Extensions\APIExtensions.cs" />
     <Compile Include="Extensions\DoubleExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
@@ -156,6 +159,7 @@
     <Compile Include="GLTFExtensions\glTFBIMExtensionBaseNodeData.cs" />
     <Compile Include="GLTFExtensions\glTFBIMExtensionLinkNode.cs" />
     <Compile Include="GLTFExtensions\glTFBIMExtensionNode.cs" />
+    <Compile Include="GLTFExtensions\glTFBIMExtensionNodePart.cs" />
     <Compile Include="GLTF\Types\glTF.cs" />
     <Compile Include="GLTF\Types\glTFAccessor.cs" />
     <Compile Include="GLTF\Types\glTFAsset.cs" />

@@ -106,8 +106,8 @@ namespace GLTFRevitExport.GLTF {
     internal sealed partial class GLTFBuilder {
         public void UseExtension(glTFExtension ext) => ensureExtensionUsed(ext);
 
-        public void OpenAsset(string generatorId, string copyright,
-                              glTFExtension[] exts, glTFExtras extras) {
+        public void SetAsset(string generatorId, string copyright,
+                             glTFExtension[] exts, glTFExtras extras) {
             var assetExts = new Dictionary<string, glTFExtension>();
             if (exts != null) {
                 foreach (var ext in exts)
@@ -124,6 +124,7 @@ namespace GLTFRevitExport.GLTF {
                 Extras = extras
             };
         }
+        
         public uint OpenScene(string name, glTFExtension[] exts, glTFExtras extras) {
             _gltf.Scenes.Add(
                 new glTFScene {
@@ -142,6 +143,8 @@ namespace GLTFRevitExport.GLTF {
         }
 
         public glTFNode GetNode(uint idx) => _gltf.Nodes[idx];
+
+        public glTFNode GetActiveNode() => _gltf.Nodes.Peek();
 
         public int FindNode(Func<glTFNode, bool> filter) {
             foreach (var node in _gltf.Nodes)
@@ -183,55 +186,39 @@ namespace GLTFRevitExport.GLTF {
                 throw new Exception(StringLib.NodeNotExist);
         }
 
-        public void UpdateNodeMatrix(double[] matrix) {
-            if (_gltf.Nodes.Peek() is glTFNode currentNode)
-                currentNode.Matrix = matrix;
-            else
-                throw new Exception(StringLib.NoParentNode);
-        }
-
-        public void UpdateNodeGeometryMaterial(string name, Color color = null, double transparency = 0.0) {
-            if (_gltf.Nodes.Peek() is glTFNode) {
-                // TODO: add this to materials or use existing
-                var material = new glTFMaterial() {
-                    Name = name,
-                    PBRMetallicRoughness = new glTFPBRMetallicRoughness() {
-                        BaseColorFactor = new List<float>() {
-                        color.Red / 255f,
-                        color.Green / 255f,
-                        color.Blue / 255f,
-                        1f - (float)transparency
-                    },
-                        MetallicFactor = 0f,
-                        RoughnessFactor = 1f,
-                    }
-                };
+        public uint NewMaterial(string name, float[] color, double transparency, glTFExtension[] exts) {
+            var material = new glTFMaterial() {
+                Name = name,
+                PBRMetallicRoughness = new glTFPBRMetallicRoughness() {
+                    BaseColorFactor = color,
+                    MetallicFactor = 0f,
+                    RoughnessFactor = 1f,
+                },
+                Extensions = exts?.ToDictionary(x => x.Name, x => x),
+            };
+            
+            var matchingMatIdx = _gltf.Materials.IndexOf(material);
+            if (matchingMatIdx >= 0)
+                return (uint)matchingMatIdx;
+            else {
                 _gltf.Materials.Add(material);
+                return (uint)_gltf.Materials.Count - 1;
             }
-            else
-                throw new Exception(StringLib.NoParentNode);
         }
 
-        public void UpdateNodeGeometry(GLTFVector[] vertices, GLTFVector[] normals, GLTFFace[] faces) {
-            //if (_gltf.Nodes.Peek() is glTFNode parent) {
-            //    _geoms.Add(
-            //        new GLTFGeom {
-            //            Vertices = vertices,
-            //            Normals = normals,
-            //            Faces = faces,
-            //            MaterialIndex = _path.MaterialIdx
-            //        }
-            //    );
-            //}
-            //else
-            //    throw new Exception(StringLib.NoParentNode);
+        public uint NewMesh(double[] vertices, double[] normals, uint[] faces, int material = -1) {
+            _gltf.Meshes.Add(
+                new glTFMesh()
+                );
+            var index = (uint)_gltf.Meshes.Count - 1;
+            if (_gltf.Nodes.Peek() is glTFNode activeNode)
+                activeNode.Mesh = index;
+            return index;
         }
 
         public void CloseNode() => _gltf.Nodes.Close();
 
         public void CloseScene() { }
-        
-        public void CloseAsset() { }
     }
     #endregion
 
@@ -413,32 +400,6 @@ namespace GLTFRevitExport.GLTF {
 //    /// for the final *.bin files.
 //    /// </summary>
 //    public List<glTFBinaryData> binaryFileData = new List<glTFBinaryData>();
-
-//    /// <summary>
-//    /// List of all materials referenced by meshes.
-//    /// </summary>
-//    public List<glTFMaterial> materials {
-//        get {
-//            return materialDict.List;
-//        }
-//    }
-
-//    /// <summary>
-//    /// Stack maintaining the geometry containers for each
-//    /// node down the current scene graph branch. These are popped
-//    /// as we retreat back up the graph.
-//    /// </summary>
-//    private Stack<Dictionary<string, GeometryData>> geometryStack = new Stack<Dictionary<string, GeometryData>>();
-
-//    /// <summary>
-//    /// The geometry container for the currently open node.
-//    /// </summary>
-//    private Dictionary<string, GeometryData> currentGeom {
-//        get {
-//            return geometryStack.Peek();
-//        }
-//    }
-//}
 
 
 //class Util
