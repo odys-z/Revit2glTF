@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 
 using Autodesk.Revit.DB;
 
-using GLTFRevitExport.GLTF.Types;
+using GLTFRevitExport.GLTF.Schema;
 using GLTFRevitExport.Properties;
 using Autodesk.Private.InfoCenterLib;
 

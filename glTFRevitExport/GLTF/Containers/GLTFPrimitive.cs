@@ -6,19 +6,17 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GLTFRevitExport.Containers {
-    internal class GLTFMesh {
+namespace GLTFRevitExport.GLTF.Containers {
+    internal class GLTFPrimitive {
         // TODO: ensure normals and vertices have the same length
         public List<GLTFVector> Vertices = new List<GLTFVector>();
         public List<GLTFVector> Normals = new List<GLTFVector>();
         public List<GLTFFace> Faces = new List<GLTFFace>();
 
-        public Material Material;
-        public Color Color;
-        public double Transparency;
+        public uint MaterialIdx;
 
-        private double[] makeArray(List<GLTFVector> vectors) {
-            var vectorBuffer = new List<double>();
+        private float[] makeArray(List<GLTFVector> vectors) {
+            var vectorBuffer = new List<float>();
             foreach (var vtx in vectors) {
                 vectorBuffer.Add(vtx.X);
                 vectorBuffer.Add(vtx.Y);
@@ -27,8 +25,8 @@ namespace GLTFRevitExport.Containers {
             return vectorBuffer.ToArray();
         }
 
-        private uint[] makeArray(List<GLTFFace> faces) {
-            var scalarBuffer = new List<uint>();
+        private ushort[] makeArray(List<GLTFFace> faces) {
+            var scalarBuffer = new List<ushort>();
             foreach (var face in faces) {
                 scalarBuffer.Add(face.V1);
                 scalarBuffer.Add(face.V2);
@@ -37,11 +35,11 @@ namespace GLTFRevitExport.Containers {
             return scalarBuffer.ToArray();
         }
 
-        public double[] GetVertexBuffer() => makeArray(Vertices);
-        public double[] GetNormalBuffer() => makeArray(Normals);
-        public uint[] GetFaceBuffer() => makeArray(Faces);
+        public float[] GetVertexBuffer() => makeArray(Vertices);
+        public float[] GetNormalBuffer() => makeArray(Normals);
+        public ushort[] GetFaceBuffer() => makeArray(Faces);
 
-        public static GLTFMesh operator +(GLTFMesh left, GLTFMesh right) {
+        public static GLTFPrimitive operator +(GLTFPrimitive left, GLTFPrimitive right) {
             int startIdx = left.Vertices.Count;
 
             // new vertices array
@@ -55,12 +53,10 @@ namespace GLTFRevitExport.Containers {
             // shift face indices
             var faces = new List<GLTFFace>(left.Faces);
             foreach (var faceIdx in right.Faces)
-                faces.Add(faceIdx + (uint)startIdx);
+                faces.Add(faceIdx + (ushort)startIdx);
 
-            return new GLTFMesh {
-                Material = left.Material,
-                Color = left.Color,
-                Transparency = left.Transparency,
+            return new GLTFPrimitive {
+                MaterialIdx = left.MaterialIdx,
                 Vertices = vertices,
                 Normals = normals,
                 Faces = faces,

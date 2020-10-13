@@ -9,14 +9,14 @@ using Newtonsoft.Json;
 using Autodesk.Revit.DB;
 
 using GLTFRevitExport.Extensions;
-using GLTFRevitExport.GLTF.Types;
+using GLTFRevitExport.GLTF.Schema;
 using GLTFRevitExport.GLTF;
 using GLTFRevitExport.Properties;
 using System.Runtime.Serialization;
 
-namespace GLTFRevitExport.GLTFExtensions {
+namespace GLTFRevitExport.GLTF.Extensions.BIM {
     [Serializable]
-    internal abstract class glTFBIMExtensionBaseNodeData : glTFBIMExtension {
+    internal abstract class glTFBIMPropertyExtension : glTFBIMExtension {
 
         private readonly BuiltInParameter[] excludeBuiltinParams =
             Enum.GetNames(typeof(BuiltInParameter))
@@ -31,7 +31,7 @@ namespace GLTFRevitExport.GLTFExtensions {
                 .Select(x => (BuiltInParameter)Enum.Parse(typeof(BuiltInParameter), x))
                 .ToArray();
 
-        internal glTFBIMExtensionBaseNodeData(Element e, Func<object, string[]> zoneFinder, bool includeParameters = true) {
+        internal glTFBIMPropertyExtension(Element e, bool includeParameters = true) {
             // identity data
             Id = e.GetId();
             Taxonomies = getTaxonomies(e);
@@ -42,13 +42,6 @@ namespace GLTFRevitExport.GLTFExtensions {
             Classes.Add(
                 $"omniclass/{getParamValue(e, BuiltInParameter.OMNICLASS_CODE)}".UriEncode()
                 );
-
-            // set level
-            if (e.Document.GetElement(e.LevelId) is Level level)
-                Level = level.GetId();
-
-            // set zones
-            Zones = zoneFinder != null ? new HashSet<string>(zoneFinder(e)) : null;
             
             // include parameters
             if (includeParameters)
@@ -145,18 +138,17 @@ namespace GLTFRevitExport.GLTFExtensions {
             return null;
         }
 
-
-        [JsonProperty("id")]
+        [JsonProperty("id", Order = 1)]
         public string Id { get; set; }
 
         // e.g. revit::Door::MyFamily::MyFamilyType
-        [JsonProperty("taxonomies")]
+        [JsonProperty("taxonomies", Order = 2)]
         public List<string> Taxonomies { get; set; } = new List<string>();
 
-        [JsonProperty("classes")]
+        [JsonProperty("classes", Order = 3)]
         public List<string> Classes { get; set; } = new List<string>();
 
-        [JsonProperty("mark")]
+        [JsonProperty("mark", Order = 4)]
         [APIBuiltinParameters(
             BuiltInParameter.ALL_MODEL_TYPE_MARK,
             BuiltInParameter.ALL_MODEL_MARK
@@ -164,7 +156,7 @@ namespace GLTFRevitExport.GLTFExtensions {
         ]
         public string Mark { get; set; }
 
-        [JsonProperty("description")]
+        [JsonProperty("description", Order = 5)]
         [APIBuiltinParameters(
             BuiltInParameter.ALL_MODEL_DESCRIPTION,
             BuiltInParameter.ALL_MODEL_DESCRIPTION
@@ -172,7 +164,7 @@ namespace GLTFRevitExport.GLTFExtensions {
         ]
         public string Description { get; set; }
 
-        [JsonProperty("comment")]
+        [JsonProperty("comment", Order = 6)]
         [APIBuiltinParameters(
             BuiltInParameter.ALL_MODEL_TYPE_COMMENTS,
             BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS
@@ -180,10 +172,10 @@ namespace GLTFRevitExport.GLTFExtensions {
         ]
         public string Comment { get; set; }
 
-        [JsonProperty("uri")]
+        [JsonProperty("uri", Order = 7)]
         public string Uri { get; set; }
 
-        [JsonProperty("dataUrl")]
+        [JsonProperty("dataUrl", Order = 8)]
         [APIBuiltinParameters(
             BuiltInParameter.ALL_MODEL_URL,
             BuiltInParameter.ALL_MODEL_URL
@@ -191,7 +183,7 @@ namespace GLTFRevitExport.GLTFExtensions {
         ]
         public string DataUrl { get; set; }
 
-        [JsonProperty("imageUrl")]
+        [JsonProperty("imageUrl", Order = 9)]
         [APIBuiltinParameters(
             BuiltInParameter.ALL_MODEL_TYPE_IMAGE,
             BuiltInParameter.ALL_MODEL_IMAGE
@@ -199,70 +191,7 @@ namespace GLTFRevitExport.GLTFExtensions {
         ]
         public string ImageUrl { get; set; }
 
-        [JsonProperty("level")]
-        public string Level { get; set; }
-
-        [JsonProperty("zones")]
-        public HashSet<string> Zones { get; set; }
-
-        [JsonProperty("bounds")]
-        public glTFBIMBounds Bounds { get; set; }
-
-        [JsonProperty("properties")]
+        [JsonProperty("properties", Order = 99)]
         public Dictionary<string, object> Properties { get; set; }
-    }
-
-    [Serializable]
-    internal class glTFBIMBounds : ISerializable {
-        internal glTFBIMBounds(BoundingBoxXYZ bbox) {
-            Min = new glTFBIMVector(bbox.Min);
-            Max = new glTFBIMVector(bbox.Max);
-        }
-
-        public glTFBIMBounds(SerializationInfo info, StreamingContext context) {
-            var min = (double[])info.GetValue("min", typeof(double[]));
-            Min = new glTFBIMVector(min[0], min[1], min[2]);
-            var max = (double[])info.GetValue("max", typeof(double[]));
-            Max = new glTFBIMVector(max[0], max[1], max[2]);
-        }
-
-        [JsonProperty("min")]
-        public glTFBIMVector Min { get; set; }
-
-        [JsonProperty("max")]
-        public glTFBIMVector Max { get; set; }
-
-        public void Union(glTFBIMBounds other) {
-            Min.ContractTo(other.Min);
-            Max.ExpandTo(other.Max);
-        }
-
-        public void GetObjectData(SerializationInfo info, StreamingContext context) {
-            info.AddValue("min", new double[] { Min.X, Min.Y, Min.Z });
-            info.AddValue("max", new double[] { Max.X, Max.Y, Max.Z });
-        }
-    }
-
-    // TODO: serialize into 3 double values
-    [Serializable]
-    internal class glTFBIMVector {
-        public double X { get; set; }
-        public double Y { get; set; }
-        public double Z { get; set; }
-
-        public glTFBIMVector(XYZ pt) { X = pt.X; Y = pt.Y; Z = pt.Z; }
-        public glTFBIMVector(double x, double y, double z) { X = x; Y = y; Z = z; }
-
-        public void ContractTo(glTFBIMVector other) {
-            X = other.X < X ? other.X : X;
-            Y = other.Y < Y ? other.Y : Y;
-            Z = other.Z < Z ? other.Z : Z;
-        }
-
-        public void ExpandTo(glTFBIMVector other) {
-            X = other.X > X ? other.X : X;
-            Y = other.Y > Y ? other.Y : Y;
-            Z = other.Z > Z ? other.Z : Z;
-        }
     }
 }

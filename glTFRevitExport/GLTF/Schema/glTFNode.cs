@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 using Newtonsoft.Json;
 
-namespace GLTFRevitExport.GLTF.Types {
+namespace GLTFRevitExport.GLTF.Schema {
     /// <summary>
     /// The nodes defining individual (or nested) elements in the scene
     /// </summary>
@@ -29,7 +29,7 @@ namespace GLTFRevitExport.GLTF.Types {
         /// A floating-point 4x4 transformation matrix stored in column major order.
         /// </summary>
         [JsonProperty("matrix")]
-        public double[] Matrix { get; set; }
+        public float[] Matrix { get; set; }
 
         /// <summary>
         /// The indices of this node's children.

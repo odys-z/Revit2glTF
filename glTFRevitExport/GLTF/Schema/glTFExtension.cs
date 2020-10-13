@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 using Newtonsoft.Json;
 
-namespace GLTFRevitExport.GLTF.Types {
+namespace GLTFRevitExport.GLTF.Schema {
     [Serializable]
     internal abstract class glTFExtension {
         internal abstract string Name { get; }

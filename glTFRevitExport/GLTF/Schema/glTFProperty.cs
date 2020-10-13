@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 
 using GLTFRevitExport.Properties;
 
-namespace GLTFRevitExport.GLTF.Types {
+namespace GLTFRevitExport.GLTF.Schema {
     [Serializable]
     internal abstract class glTFProperty {
         [JsonProperty("extensions")]

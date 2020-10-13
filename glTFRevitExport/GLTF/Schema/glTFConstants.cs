@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GLTFRevitExport.GLTF.Types {
+namespace GLTFRevitExport.GLTF.Schema {
     /// <summary>
     /// Magic numbers to differentiate scalar and vector 
     /// array buffers.
@@ -27,5 +27,19 @@ namespace GLTFRevitExport.GLTF.Types {
         UNSIGNED_SHORT = 5123,
         UNSIGNED_INT = 5125,
         FLOAT = 5126
+    }
+
+    /// <summary>
+    /// glTF Mesh Modes
+    /// </summary>
+    // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#primitivemode
+    internal enum glTFMeshMode {
+        POINTS,
+        LINES,
+        LINE_LOOP,
+        LINE_STRIP,
+        TRIANGLES,
+        TRIANGLE_STRIP,
+        TRIANGLE_FAN
     }
 }

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GLTFRevitExport.GLTF.Types {
+namespace GLTFRevitExport.GLTF.Schema {
     /// <summary>
     /// A reference to a subsection of a buffer containing either vector or scalar data.
     /// </summary>

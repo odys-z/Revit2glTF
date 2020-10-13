@@ -7,10 +7,10 @@ using Autodesk.Revit.DB;
 
 using GLTFRevitExport.Extensions;
 
-namespace GLTFRevitExport.GLTFExtensions {
+namespace GLTFRevitExport.GLTF.Extensions.BIM {
     [Serializable]
-    internal class glTFBIMExtensionDocumentData : glTFBIMExtension {
-        internal glTFBIMExtensionDocumentData(Document d, bool includeParameters = true) : base() {
+    internal class glTFBIMAssetExtension : glTFBIMExtension {
+        internal glTFBIMAssetExtension(Document d, bool includeParameters = true) : base() {
             App = getAppName(d);
             Id = getDocumentId(d).ToString();
             Title = d.Title;
@@ -66,8 +66,6 @@ namespace GLTFRevitExport.GLTFExtensions {
             }
             return docProps;
         }
-
-        public override string Type => "document";
 
         [JsonProperty("application")]
         public string App { get; set; }

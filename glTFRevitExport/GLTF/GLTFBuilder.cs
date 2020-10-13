@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 
 using Autodesk.Revit.DB;
-
-using GLTFRevitExport.GLTF.Types;
+using GLTFRevitExport.GLTF.Containers;
+using GLTFRevitExport.GLTF.Schema;
 using GLTFRevitExport.Properties;
 
 namespace GLTFRevitExport.GLTF {
@@ -19,6 +19,10 @@ namespace GLTFRevitExport.GLTF {
         /// </summary>
         /// <returns></returns>
         internal GLTFContainer Pack(string filename, bool singleBinary = true) {
+            foreach (var bchunk in _bufferChunks)
+                _gltf.Accessors.Add(
+                    new glTFAccessor()
+                    );
             // store snapshot of collected data into a gltf structure
             return new GLTFContainer() {
                 Name = filename,
@@ -67,44 +71,19 @@ namespace GLTFRevitExport.GLTF {
     internal sealed partial class GLTFBuilder {
         private readonly glTF _gltf = null;
 
-        private glTFScene peekScene() => _gltf.Scenes.LastOrDefault();
-
-        private glTFNode peekNode() => _gltf.Nodes.LastOrDefault();
-
-        public void ensureExtensionUsed(glTFExtension ext) {
-            if (_gltf.ExtensionsUsed is null)
-                _gltf.ExtensionsUsed = new HashSet<string>();
-            _gltf.ExtensionsUsed.Add(ext.Name);
-        }
-
-        public uint ensureNodeInScene(uint idx) {
-            if (peekScene() is glTFScene scene) {
-                if (!_gltf.Nodes.IsOpen())
-                    scene.Nodes.Add(idx);
-                return idx;
-            }
-            else
-                throw new Exception(StringLib.NoParentScene);
-        }
-
-        public uint appendNode(string name, double[] matrix, glTFExtension[] exts, glTFExtras extras) {
-            // create new node and set base properties
-            var node = new glTFNode() {
-                Name = name ?? "undefined",
-                Matrix = matrix,
-                Extensions = exts?.ToDictionary(x => x.Name, x => x),
-                Extras = extras
-            };
-
-            var idx = _gltf.Nodes.Append(node);
-            return ensureNodeInScene(idx);
-        }
+        private readonly List<GLTFBufferChunk> _bufferChunks = new List<GLTFBufferChunk>();
+        private readonly Queue<glTFMeshPrimitive> _primQueue = new Queue<glTFMeshPrimitive>();
     }
+
     #endregion
 
     #region Builders
     internal sealed partial class GLTFBuilder {
-        public void UseExtension(glTFExtension ext) => ensureExtensionUsed(ext);
+        public void UseExtension(glTFExtension ext) {
+            if (_gltf.ExtensionsUsed is null)
+                _gltf.ExtensionsUsed = new HashSet<string>();
+            _gltf.ExtensionsUsed.Add(ext.Name);
+        }
 
         public void SetAsset(string generatorId, string copyright,
                              glTFExtension[] exts, glTFExtras extras) {
@@ -113,7 +92,7 @@ namespace GLTFRevitExport.GLTF {
                 foreach (var ext in exts)
                     if (ext != null) {
                         assetExts.Add(ext.Name, ext);
-                        ensureExtensionUsed(ext);
+                        UseExtension(ext);
                     }
             }
 
@@ -124,8 +103,33 @@ namespace GLTFRevitExport.GLTF {
                 Extras = extras
             };
         }
-        
-        public uint OpenScene(string name, glTFExtension[] exts, glTFExtras extras) {
+
+        public uint AppendNodeToScene(uint idx) {
+            if (PeekScene() is glTFScene scene) {
+                if (!_gltf.Nodes.IsOpen())
+                    scene.Nodes.Add(idx);
+                return idx;
+            }
+            else
+                throw new Exception(StringLib.NoParentScene);
+        }
+
+        public uint AppendNode(string name, float[] matrix,
+                               glTFExtension[] exts, glTFExtras extras) {
+            // create new node and set base properties
+            var node = new glTFNode() {
+                Name = name ?? "undefined",
+                Matrix = matrix,
+                Extensions = exts?.ToDictionary(x => x.Name, x => x),
+                Extras = extras
+            };
+
+            var idx = _gltf.Nodes.Append(node);
+            return AppendNodeToScene(idx);
+        }
+
+        public uint OpenScene(string name,
+                              glTFExtension[] exts, glTFExtras extras) {
             _gltf.Scenes.Add(
                 new glTFScene {
                     Name = name,
@@ -136,11 +140,16 @@ namespace GLTFRevitExport.GLTF {
             return (uint)_gltf.Scenes.Count - 1;
         }
 
-        public uint OpenNode(string name, double[] matrix, glTFExtension[] exts, glTFExtras extras) {
-            var idx = appendNode(name, matrix, exts, extras);
+        public glTFScene PeekScene() => _gltf.Scenes.LastOrDefault();
+
+        public uint OpenNode(string name, float[] matrix,
+                             glTFExtension[] exts, glTFExtras extras) {
+            var idx = AppendNode(name, matrix, exts, extras);
             _gltf.Nodes.Open(idx);
             return idx;
         }
+
+        public glTFNode PeekNode() => _gltf.Nodes.LastOrDefault();
 
         public glTFNode GetNode(uint idx) => _gltf.Nodes[idx];
 
@@ -178,7 +187,7 @@ namespace GLTFRevitExport.GLTF {
 
         public uint OpenExistingNode(uint idx) {
             if (_gltf.Nodes.Contains(idx)) {
-                ensureNodeInScene(idx);
+                AppendNodeToScene(idx);
                 _gltf.Nodes.Open(idx);
                 return idx;
             }
@@ -186,7 +195,9 @@ namespace GLTFRevitExport.GLTF {
                 throw new Exception(StringLib.NodeNotExist);
         }
 
-        public uint NewMaterial(string name, float[] color, double transparency, glTFExtension[] exts) {
+        public uint AddMaterial(string name, float[] color,
+                                glTFExtension[] exts, glTFExtras extras) {
+            // TODO: fix color material
             var material = new glTFMaterial() {
                 Name = name,
                 PBRMetallicRoughness = new glTFPBRMetallicRoughness() {
@@ -195,6 +206,7 @@ namespace GLTFRevitExport.GLTF {
                     RoughnessFactor = 1f,
                 },
                 Extensions = exts?.ToDictionary(x => x.Name, x => x),
+                Extras = extras
             };
             
             var matchingMatIdx = _gltf.Materials.IndexOf(material);
@@ -206,17 +218,68 @@ namespace GLTFRevitExport.GLTF {
             }
         }
 
-        public uint NewMesh(double[] vertices, double[] normals, uint[] faces, int material = -1) {
-            _gltf.Meshes.Add(
-                new glTFMesh()
-                );
+        public uint AddPrimitive(GLTFPrimitive primitive,
+                                 glTFExtension[] exts, glTFExtras extras) {
+            var vertexBuffer = 
+                new GLTFBufferChunk<float>(primitive.GetVertexBuffer());
+            var vBuffIdx = _bufferChunks.IndexOf(vertexBuffer);
+            if (vBuffIdx < 0) {
+                _bufferChunks.Add(vertexBuffer);
+                vBuffIdx = _bufferChunks.Count - 1;
+            }
+
+            var normalBuffer = 
+                new GLTFBufferChunk<float>(primitive.GetNormalBuffer());
+            var nBuffIdx = _bufferChunks.IndexOf(normalBuffer);
+            if (nBuffIdx < 0) {
+                _bufferChunks.Add(normalBuffer);
+                nBuffIdx = _bufferChunks.Count - 1;
+            }
+
+            var faceBuffer = 
+                new GLTFBufferChunk<ushort>(primitive.GetFaceBuffer());
+            var fBuffIdx = _bufferChunks.IndexOf(faceBuffer);
+            if (fBuffIdx < 0) {
+                _bufferChunks.Add(faceBuffer);
+                fBuffIdx = _bufferChunks.Count - 1;
+            }
+
+            _primQueue.Enqueue(
+                new glTFMeshPrimitive {
+                    Indices = (uint)fBuffIdx,
+                    Attributes = new glTFAttributes {
+                        Position = (uint)vBuffIdx,
+                        Normal = (uint)nBuffIdx,
+                    },
+                    Material = primitive.MaterialIdx
+                }
+            );
+            
             var index = (uint)_gltf.Meshes.Count - 1;
             if (_gltf.Nodes.Peek() is glTFNode activeNode)
                 activeNode.Mesh = index;
             return index;
         }
 
-        public void CloseNode() => _gltf.Nodes.Close();
+        public void CloseNode() {
+            if (PeekNode() is glTFNode currentNode) {
+                if (_primQueue.Count > 0) {
+                    // combine all collected primitives into a mesh
+                    _gltf.Meshes.Add(
+                        new glTFMesh {
+                            Primitives = _primQueue.ToList()
+                        }
+                    );
+                    currentNode.Mesh = (uint)_gltf.Meshes.Count - 1;
+                }
+
+                // and close the node
+                _gltf.Nodes.Close();
+
+                // clean queue
+                _primQueue.Clear();
+            }
+        }
 
         public void CloseScene() { }
     }

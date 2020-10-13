@@ -9,18 +9,15 @@ using Newtonsoft.Json;
 using Autodesk.Revit.DB;
 
 using GLTFRevitExport.Extensions;
-using GLTFRevitExport.GLTF.Types;
+using GLTFRevitExport.GLTF.Schema;
 using GLTFRevitExport.GLTF;
 using GLTFRevitExport.Properties;
 
-namespace GLTFRevitExport.GLTFExtensions {
+namespace GLTFRevitExport.GLTF.Extensions.BIM {
     [Serializable]
     internal abstract class glTFBIMExtension: glTFExtension {
         internal glTFBIMExtension() { }
 
         internal override string Name => StringLib.GLTFExtensionName;
-
-        [JsonProperty("$type")]
-        public abstract string Type { get; } 
     }
 }

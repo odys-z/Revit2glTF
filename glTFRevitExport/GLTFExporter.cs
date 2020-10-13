@@ -1,9 +1,7 @@
 ﻿using System;
 using System.IO;
 using Autodesk.Revit.DB;
-using GLTFRevitExport.GLTF.Types;
-using GLTFRevitExport.GLTFExtensions;
-using GLTFRevitExport.Properties;
+using GLTFRevitExport.GLTF.Schema;
 
 namespace GLTFRevitExport {
     public class GLTFExporter {

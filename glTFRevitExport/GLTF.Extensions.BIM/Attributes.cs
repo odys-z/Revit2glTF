@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 using Autodesk.Revit.DB;
 
-namespace GLTFRevitExport.GLTFExtensions {
+namespace GLTFRevitExport.GLTF.Extensions.BIM {
     [AttributeUsage(AttributeTargets.Property)]
     internal class APIBuiltinParametersAttribute : Attribute {
         public BuiltInParameter TypeParam { get; private set; }

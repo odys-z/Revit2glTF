@@ -8,7 +8,7 @@ using System.Web;
 
 using Autodesk.Revit.DB;
 
-using GLTFRevitExport.Containers;
+using GLTFRevitExport.GLTF.Containers;
 
 namespace GLTFRevitExport.Extensions {
     internal static class APIExtensions {
@@ -45,7 +45,7 @@ namespace GLTFRevitExport.Extensions {
         /// Convert Revit transform to floating-point 4x4 transformation
         /// matrix stored in column major order
         /// </summary>
-        static public double[] ToGLTF(this Transform xform) {
+        static public float[] ToGLTF(this Transform xform) {
             if (xform == null || xform.IsIdentity) return null;
 
             var bx = xform.BasisX;
@@ -53,10 +53,10 @@ namespace GLTFRevitExport.Extensions {
             var bz = xform.BasisZ;
             var or = xform.Origin;
 
-            return new double[16] {
-                bx.X,        bx.Y,        bx.Z,        0,
-                by.X,        by.Y,        by.Z,        0,
-                bz.X,        bz.Y,        bz.Z,        0,
+            return new float[16] {
+                (float)bx.X,         (float)bx.Y,         (float)bx.Z,         0,
+                (float)by.X,         (float)by.Y,         (float)by.Z,         0,
+                (float)bz.X,         (float)bz.Y,         (float)bz.Z,         0,
                 or.X.ToGLTFLength(), or.Y.ToGLTFLength(), or.Z.ToGLTFLength(), 1
             };
         }
@@ -102,7 +102,7 @@ namespace GLTFRevitExport.Extensions {
         }
 
         static public GLTFFace ToGLTF(this PolymeshFacet f) {
-            return new GLTFFace(v1: f.V1, v2: f.V2, v3: f.V3);
+            return new GLTFFace(v1: (ushort)f.V1, v2: (ushort)f.V2, v3: (ushort)f.V3);
         }
         
         public static bool IsCategory(this Category c, BuiltInCategory bic)

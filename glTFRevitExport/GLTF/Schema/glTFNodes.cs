@@ -6,7 +6,7 @@ using System.Linq;
 
 using GLTFRevitExport.Properties;
 
-namespace GLTFRevitExport.GLTF.Types {
+namespace GLTFRevitExport.GLTF.Schema {
     /// <summary>
     /// 
     /// </summary>

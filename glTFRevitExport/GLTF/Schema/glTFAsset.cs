@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 
 using GLTFRevitExport.Properties;
 
-namespace GLTFRevitExport.GLTF.Types {
+namespace GLTFRevitExport.GLTF.Schema {
     /// <summary>
     /// Required glTF asset information
     /// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#asset
