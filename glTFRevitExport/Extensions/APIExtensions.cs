@@ -37,7 +37,7 @@ namespace GLTFRevitExport.Extensions {
                 color.Red / 255f,
                 color.Green / 255f,
                 color.Blue / 255f,
-                1f - (float)transparency
+                1f - transparency
             };
         }
 
@@ -48,16 +48,17 @@ namespace GLTFRevitExport.Extensions {
         static public float[] ToGLTF(this Transform xform) {
             if (xform == null || xform.IsIdentity) return null;
 
+            //var yUpXform = xform * Transform.CreateRotation(new XYZ(1,0,0), -1.570796);
             var bx = xform.BasisX;
             var by = xform.BasisY;
             var bz = xform.BasisZ;
             var or = xform.Origin;
 
             return new float[16] {
-                (float)bx.X,         (float)bx.Y,         (float)bx.Z,         0,
-                (float)by.X,         (float)by.Y,         (float)by.Z,         0,
-                (float)bz.X,         (float)bz.Y,         (float)bz.Z,         0,
-                or.X.ToGLTFLength(), or.Y.ToGLTFLength(), or.Z.ToGLTFLength(), 1
+                bx.X.ToSingle(),         bx.Y.ToSingle(),         bx.Z.ToSingle(),         0f,
+                by.X.ToSingle(),         by.Y.ToSingle(),         by.Z.ToSingle(),         0f,
+                bz.X.ToSingle(),         bz.Y.ToSingle(),         bz.Z.ToSingle(),         0f,
+                or.X.ToGLTFLength(),     or.Y.ToGLTFLength(),     or.Z.ToGLTFLength(),     1f
             };
         }
 
@@ -91,18 +92,6 @@ namespace GLTFRevitExport.Extensions {
                     return param.AsElementId().IntegerValue;
             }
             return null;
-        }
-
-        static public GLTFVector ToGLTF(this XYZ p) {
-            return new GLTFVector(
-                x: p.X.ToGLTFLength(),
-                y: p.Y.ToGLTFLength(),
-                z: p.Z.ToGLTFLength()
-            );
-        }
-
-        static public GLTFFace ToGLTF(this PolymeshFacet f) {
-            return new GLTFFace(v1: (ushort)f.V1, v2: (ushort)f.V2, v3: (ushort)f.V3);
         }
         
         public static bool IsCategory(this Category c, BuiltInCategory bic)

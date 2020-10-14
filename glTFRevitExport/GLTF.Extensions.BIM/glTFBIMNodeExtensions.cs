@@ -78,9 +78,9 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
         public float Z { get; set; }
 
         public glTFBIMVector(XYZ pt) {
-            X = (float)pt.X;
-            Y = (float)pt.Y;
-            Z = (float)pt.Z;
+            X = pt.X.ToSingle();
+            Y = pt.Y.ToSingle();
+            Z = pt.Z.ToSingle();
         }
 
         public glTFBIMVector(float x, float y, float z) {

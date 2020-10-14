@@ -11,6 +11,7 @@ namespace GLTFRevitExport.GLTF.Schema {
     /// A reference to a subsection of a BufferView containing a particular data type.
     /// </summary>
     // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#accessors
+    [Serializable]
     internal class glTFAccessor : glTFProperty {
         /// <summary>
         /// The index of the bufferView.
@@ -46,18 +47,12 @@ namespace GLTFRevitExport.GLTF.Schema {
         /// Maximum value of each component in this attribute.
         /// </summary>
         [JsonProperty("max")]
-        public List<float> Max { get; set; }
+        public object[] Max { get; set; }
 
         /// <summary>
         /// Minimum value of each component in this attribute.
         /// </summary>
         [JsonProperty("min")]
-        public List<float> Min { get; set; }
-
-        /// <summary>
-        /// A user defined name for this accessor.
-        /// </summary>
-        [JsonProperty("name")]
-        public string Name { get; set; }
+        public object[] Min { get; set; }
     }
 }

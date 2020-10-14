@@ -147,10 +147,8 @@
   <ItemGroup>
     <Compile Include="GLTF.Extensions.BIM\glTFBIMNodeExtensions.cs" />
     <Compile Include="GLTF.Extensions.BIM\glTFBIMMaterialExtensions.cs" />
-    <Compile Include="GLTF\Containers\GLTFBufferChunk.cs" />
-    <Compile Include="GLTF\Containers\GLTFFace.cs" />
-    <Compile Include="GLTF\Containers\GLTFPrimitive.cs" />
-    <Compile Include="GLTF\Containers\GLTFVector.cs" />
+    <Compile Include="GLTFBuildConfigs.cs" />
+    <Compile Include="GLTFContainer.cs" />
     <Compile Include="Extensions\APIExtensions.cs" />
     <Compile Include="Extensions\DoubleExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
@@ -178,7 +176,6 @@
     <Compile Include="GLTF\Schema\glTFScene.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="GlTFExportContext.cs" />
-    <Compile Include="GLTF\Containers.cs" />
     <Compile Include="GLTF\GLTFBuilder.cs" />
     <Compile Include="Properties\StringLib.Designer.cs">
       <AutoGen>True</AutoGen>

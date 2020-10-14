@@ -17,12 +17,12 @@ namespace GLTFRevitExport.GLTF.Schema {
         /// The index of the accessor for position data
         /// </summary>
         [JsonProperty("POSITION")]
-        public uint Position { get; set; }
+        public uint? Position { get; set; }
 
         /// <summary>
         /// The index of the accessor for normal data
         /// </summary>
         [JsonProperty("NORMAL")]
-        public uint Normal { get; set; }
+        public uint? Normal { get; set; }
     }
 }

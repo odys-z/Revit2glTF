@@ -1,17 +1,16 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using Autodesk.Revit.DB;
+using GLTFRevitExport.GLTF.Containers;
 using GLTFRevitExport.GLTF.Schema;
 
 namespace GLTFRevitExport {
     public class GLTFExporter {
-        private readonly GLTFExportConfigs _cfgs = null;        
         private readonly GLTFExportContext _ctx = null;
 
-        public GLTFExporter(Document doc, GLTFExportConfigs configs = null) {
-            _cfgs = configs ?? new GLTFExportConfigs();
-            _ctx = new GLTFExportContext(doc, _cfgs);
-        }
+        public GLTFExporter(Document doc, GLTFExportConfigs configs = null)
+            => _ctx = new GLTFExportContext(doc, configs ?? new GLTFExportConfigs());
 
         public void ExportView(View view, ElementFilter filter = null) {
             var exp = new CustomExporter(view.Document, _ctx) {
@@ -29,23 +28,24 @@ namespace GLTFRevitExport {
 #endif
         }
 
-        public string[] BuildGLTF(string filename, string directory,
-                                  ElementFilter filter = null,
-                                  Func<object, string[]> zoneFinder = null,
-                                  Func<object, glTFExtras> extrasBuilder = null) {
-            // ensure filename is really a file name and no extension
-            filename = Path.GetFileNameWithoutExtension(filename);
-
+        public GLTFContainer BuildGLTF(ElementFilter filter = null,
+                                       Func<object, string[]> zoneFinder = null,
+                                       Func<object, glTFExtras> extrasBuilder = null,
+                                       GLTFBuildConfigs configs = null)
+        {
+            // ensure configs
+            configs = configs ?? new GLTFBuildConfigs();
             // build the glTF
             var glTF = _ctx.Build(filter, zoneFinder, extrasBuilder);
-
             // pack the glTF data and get the container
-            var container = glTF.Pack(
-                filename: filename,
-                singleBinary: _cfgs.UseSingleBinary
+            var gltfPack = glTF.Pack(
+                singleBinary: configs.UseSingleBinary
             );
 
-            return container.Write(directory);
+            return new GLTFContainer {
+                Model = gltfPack.Item1,
+                Binaries = gltfPack.Item2
+            };
         }
     }
 }

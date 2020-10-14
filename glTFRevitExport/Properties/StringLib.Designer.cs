@@ -61,6 +61,15 @@ namespace GLTFRevitExport.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Array is not vector3 data.
+        /// </summary>
+        internal static string ArrayIsNotVector3Data {
+            get {
+                return ResourceManager.GetString("ArrayIsNotVector3Data", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to EXT_bim_metadata.
         /// </summary>
         internal static string GLTFExtensionName {
@@ -102,6 +111,15 @@ namespace GLTFRevitExport.Properties {
         internal static string NoParentNode {
             get {
                 return ResourceManager.GetString("NoParentNode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to There are no primitives with given index is this node&apos;s mesh.
+        /// </summary>
+        internal static string NoParentPrimitive {
+            get {
+                return ResourceManager.GetString("NoParentPrimitive", resourceCulture);
             }
         }
         

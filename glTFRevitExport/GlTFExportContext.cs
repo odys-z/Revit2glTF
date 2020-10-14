@@ -58,17 +58,102 @@ namespace GLTFRevitExport {
         /// </summary>
         private bool _skipElement = false;
 
-        class PartData {
-            public PartData(GLTFPrimitive primitive) => Primitive = primitive;
+        class VectorData : IComparable<VectorData> {
+            public float X { get; set; }
+            public float Y { get; set; }
+            public float Z { get; set; }
 
-            public GLTFPrimitive Primitive;
+            public VectorData(XYZ vector) {
+                //var xform = Transform.CreateRotation(new XYZ(1, 0, 0), -1.570796);
+                //vector = xform.OfPoint(vector);
+
+                X = vector.X.ToGLTFLength();
+                Y = vector.Y.ToGLTFLength();
+                Z = vector.Z.ToGLTFLength();
+
+                // Y Up!
+                ////X = -X;
+                //float tmp = Y;
+                //Y = Z;
+                //Z = tmp;
+            }
+
+            public float[] ToArray() => new float[] { X, Y, Z };
+
+            public int CompareTo(VectorData a) {
+                float d = X - a.X;
+                if (0 == d) {
+                    d = Y - a.Y;
+                    if (0 == d) {
+                        d = Z - a.Z;
+                    }
+                }
+                return (0 == d) ? 0 : ((0 < d) ? 1 : -1);
+            }
+        }
+
+        class FacetData {
+            public uint V1 { get; set; }
+            public uint V2 { get; set; }
+            public uint V3 { get; set; }
+
+            public FacetData(PolymeshFacet f) {
+                V1 = (uint)f.V1;
+                V2 = (uint)f.V2;
+                V3 = (uint)f.V3;
+            }
+
+            public uint[] ToArray() => new uint[] { V1, V2, V3 };
+
+            public static FacetData operator +(FacetData left, uint shift) {
+                left.V1 += shift;
+                left.V2 += shift;
+                left.V3 += shift;
+                return left;
+            }
+        }
+
+        class PrimitiveData {
+            // TODO: ensure normals and vertices have the same length
+            public List<VectorData> Vertices = new List<VectorData>();
+            public List<VectorData> Normals = new List<VectorData>();
+            public List<FacetData> Faces = new List<FacetData>();
+
+            public static PrimitiveData operator +(PrimitiveData left, PrimitiveData right) {
+                int startIdx = left.Vertices.Count;
+
+                // new vertices array
+                var vertices = new List<VectorData>(left.Vertices);
+                vertices.AddRange(right.Vertices);
+
+                // new normals array
+                var normals = new List<VectorData>(left.Normals);
+                normals.AddRange(right.Normals);
+
+                // shift face indices
+                var faces = new List<FacetData>(left.Faces);
+                foreach (var faceIdx in right.Faces)
+                    faces.Add(faceIdx + (ushort)startIdx);
+
+                return new PrimitiveData {
+                    Vertices = vertices,
+                    Normals = normals,
+                    Faces = faces,
+                };
+            }
+        }
+
+        class PartData {
+            public PartData(PrimitiveData primitive) => Primitive = primitive;
+
+            public PrimitiveData Primitive;
 
             public Material Material;
             public Color Color;
             public double Transparency;
 
             public static PartData operator +(PartData left, PartData right) {
-                GLTFPrimitive prim;
+                PrimitiveData prim;
                 if (left.Primitive is null)
                     prim = right.Primitive;
                 else if (right.Primitive is null)
@@ -113,42 +198,6 @@ namespace GLTFRevitExport {
         // Runs once at end of export
         // Collects any data that is not passed by default to this context
         public void Finish() {
-            // TODO: process extra content
-            //if (_cfgs.IncludeNonStdElements) {
-            //    // this "BIM glTF superset" and write a spec for it. Gridlines below
-            //    // are an example.
-
-            //    // Add gridlines as gltf nodes in the format:
-            //    // Origin {Vec3<double>}, Direction {Vec3<double>}, Length {double}
-            //    FilteredElementCollector col = new FilteredElementCollector(_doc)
-            //        .OfClass(typeof(Grid));
-
-            //    var grids = col.ToElements();
-            //    foreach (Grid g in grids) {
-            //        Line l = g.Curve as Line;
-
-            //        var origin = l.Origin;
-            //        var direction = l.Direction;
-            //        var length = l.Length;
-
-            //        var xtras = new glTFExtras();
-            //        var grid = new GridParameters();
-            //        grid.origin = new List<double>() { origin.X, origin.Y, origin.Z };
-            //        grid.direction = new List<double>() { direction.X, direction.Y, direction.Z };
-            //        grid.length = length;
-            //        xtras.GridParameters = grid;
-            //        xtras.UniqueId = g.UniqueId;
-            //        xtras.Properties = Util.GetElementProperties(g, true);
-
-            //        var gridNode = new glTFNode();
-            //        gridNode.name = g.Name;
-            //        gridNode.extras = xtras;
-
-            //        container.glTF.nodes.Add(gridNode);
-            //        container.glTF.nodes[0].children.Add(container.glTF.nodes.Count - 1);
-            //    }
-            //}
-
             Logger.Log("- end collect");
         }
 
@@ -431,10 +480,10 @@ namespace GLTFRevitExport {
                 Logger.Log("> polymesh");
                 var activePart = _partStack.Peek();
 
-                var newPrim = new GLTFPrimitive {
-                    Vertices = polymesh.GetPoints().Select(x => x.ToGLTF()).ToList(),
-                    Normals = polymesh.GetNormals().Select(x => x.ToGLTF()).ToList(),
-                    Faces = polymesh.GetFacets().Select(x => x.ToGLTF()).ToList()
+                var newPrim = new PrimitiveData {
+                    Vertices = polymesh.GetPoints().Select(x => new VectorData(x)).ToList(),
+                    Normals = polymesh.GetNormals().Select(x => new VectorData(x)).ToList(),
+                    Faces = polymesh.GetFacets().Select(x => new FacetData(x)).ToList()
                 };
 
                 if (activePart.Primitive is null)
@@ -561,9 +610,9 @@ namespace GLTFRevitExport {
                 string targetId = string.Empty;
                 Func<glTFNode, bool> nodeFilter = node => {
                     if (node.Extensions != null) {
-                        foreach (var nodeExt in node.Extensions)
-                            if (nodeExt.Value is glTFBIMNodeExtension bimExt)
-                                return bimExt.Id == targetId;
+                        foreach (var ext in node.Extensions)
+                            if (ext.Value is glTFBIMNodeExtension nodeExt)
+                                return nodeExt.Id == targetId;
                     }
                     return false;
                 };
@@ -622,18 +671,18 @@ namespace GLTFRevitExport {
             }
 
             private void updateBounds(GLTFBuilder gltf, uint idx, glTFBIMBounds bounds) {
-                glTFNode currentNode = gltf.GetNode(idx);
-                if (currentNode.Extensions != null) {
-                    foreach (var nodeExt in currentNode.Extensions) {
-                        if (nodeExt.Value is glTFBIMNodeExtension bimExt) {
-                            if (bimExt.Bounds != null)
-                                bimExt.Bounds.Union(bounds);
+                glTFNode node = gltf.GetNode(idx);
+                if (node.Extensions != null) {
+                    foreach (var ext in node.Extensions) {
+                        if (ext.Value is glTFBIMNodeExtension nodeExt) {
+                            if (nodeExt.Bounds != null)
+                                nodeExt.Bounds.Union(bounds);
                             else
-                                bimExt.Bounds = bounds;
+                                nodeExt.Bounds = bounds;
 
                             int parentIdx = gltf.FindParentNode(idx);
                             if (parentIdx >= 0)
-                                updateBounds(gltf, (uint)parentIdx, bimExt.Bounds);
+                                updateBounds(gltf, (uint)parentIdx, nodeExt.Bounds);
                         }
                     }
                 }
@@ -657,36 +706,87 @@ namespace GLTFRevitExport {
             public OnPartNodeAction(PartData partp) => _partp = partp;
 
             public override void Execute(GLTFBuilder gltf) {
-                if (gltf.GetActiveNode() is glTFNode activeNode) {
-                    Logger.Log("> material");
+                Logger.Log("> primitive");
 
-                    var newPrimitive = _partp.Primitive;
+                // make a new mesh and assign the new material
+                var vertices = new List<float>();
+                foreach(var vec in _partp.Primitive.Vertices)
+                    vertices.AddRange(vec.ToArray());
+                
+                var normals = new List<float>();
+                foreach (var vec in _partp.Primitive.Normals)
+                    normals.AddRange(vec.ToArray());
 
-                    if (_partp.Material is null) {
-                        // make a new material from color and transparency
-                        newPrimitive.MaterialIdx = gltf.AddMaterial(
-                            name: _partp.Color.GetId(),
-                            color: _partp.Color.ToGLTF((float)_partp.Transparency),
+                var faces = new List<uint>();
+                foreach (var facet in _partp.Primitive.Faces)
+                    faces.AddRange(facet.ToArray());
+
+                var primIndex = gltf.AddPrimitive(
+                    vertices: vertices.ToArray(),
+                    normals: normals.ToArray(),
+                    faces: faces.ToArray()
+                    );
+
+                Logger.Log("> material");
+                
+                // if material information is not provided, make a material
+                // based on color and transparency
+                if (_partp.Material is null) {
+                    string matName = _partp.Color.GetId();
+                    var existingMaterialIndex =
+                        gltf.FindMaterial((mat) => mat.Name == matName);
+
+                    // check if material already exists
+                    if (existingMaterialIndex >= 0) {
+                        gltf.UpdateMaterial(
+                            primitiveIndex: primIndex,
+                            materialIndex: (uint)existingMaterialIndex
+                        );
+                    }
+                    // otherwise make a new material from color and transparency
+                    else {
+                        gltf.AddMaterial(
+                            primitiveIndex: primIndex,
+                            name: matName,
+                            color: _partp.Color.ToGLTF(_partp.Transparency.ToSingle()),
                             exts: null,
                             extras: null
                         );
-
                     }
+                }
+                // otherwise process the material
+                else {
+                    var existingMaterialIndex =
+                        gltf.FindMaterial(
+                            (mat) => {
+                                if (mat.Extensions != null) {
+                                    foreach (var ext in mat.Extensions)
+                                        if (ext.Value is glTFBIMMaterialExtensions matExt)
+                                            return matExt.Id == _partp.Material.UniqueId;
+                                }
+                                return false;
+                            }
+                        );
+
+                    // check if material already exists
+                    if (existingMaterialIndex >= 0) {
+                        gltf.UpdateMaterial(
+                            primitiveIndex: primIndex,
+                            materialIndex: (uint)existingMaterialIndex
+                        );
+                    }
+                    // otherwise make a new material and get its index
                     else {
-                        // make a new material and get its index
-                        newPrimitive.MaterialIdx = gltf.AddMaterial(
+                        gltf.AddMaterial(
+                            primitiveIndex: primIndex,
                             name: _partp.Material.Name,
-                            color: _partp.Color.ToGLTF((float)_partp.Transparency),
+                            color: _partp.Color.ToGLTF(_partp.Transparency.ToSingle()),
                             exts: new glTFExtension[] {
-                                new glTFBIMMaterialExtensions(_partp.Material, IncludeProperties)
+                            new glTFBIMMaterialExtensions(_partp.Material, IncludeProperties)
                             },
                             extras: null
                         );
                     }
-
-                    Logger.Log("> primitive");
-                    // make a new mesh and assign the new material
-                    gltf.AddPrimitive(newPrimitive, exts: null, extras: null);
                 }
             }
         }
@@ -800,6 +900,7 @@ namespace GLTFRevitExport {
                         break;
                 }
             }
+
 
             Logger.Log("- end build");
 

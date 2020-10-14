@@ -20,11 +20,6 @@ namespace GLTFRevitExport {
         public string CopyrightMessage;
 
         /// <summary>
-        /// Export all buffers into a single binary file
-        /// </summary>
-        public bool UseSingleBinary { get; set; } = true;
-
-        /// <summary>
         /// Export linked Revit models
         /// </summary>
         public bool ExportLinkedModels { get; set; } = true;

@@ -10,27 +10,24 @@ namespace GLTFRevitExport.Extensions {
         /// Consider a Revit length zero 
         /// if is smaller than this.
         /// </summary>
-        const double _eps = 1.0e-9;
+        const float _eps = 1.0e-9f;
 
         /// <summary>
-        /// Conversion factor from feet to millimetres.
+        /// Conversion factor from feet to meter.
         /// </summary>
-        const double _feet_to_m = 0.3048;
+        const float _feet_to_m = 0.3048f;
+
+        public static float ToSingle(this double d)
+            => Convert.ToSingle(d);
 
         /// <summary>
-        /// Convert double length value from feet to millimetre
+        /// Convert double length value from feet to meter
         /// </summary>
-        public static long ToGLTFLength(this double d) {
-            if (0 < d) {
-                return _eps > d
-                  ? 0
-                  : (long)(_feet_to_m * d + 0.5);
-            }
-            else {
-                return _eps > -d
-                  ? 0
-                  : (long)(_feet_to_m * d - 0.5);
-            }
+        public static float ToGLTFLength(this double d) {
+            var f = d.ToSingle();
+            if (Math.Abs(f) <= _eps)
+                return 0f;
+            return _feet_to_m * f;
         }
     }
 }
