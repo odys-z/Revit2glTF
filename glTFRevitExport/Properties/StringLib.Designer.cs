@@ -140,5 +140,14 @@ namespace GLTFRevitExport.Properties {
                 return ResourceManager.GetString("NoSupportedView", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} Root.
+        /// </summary>
+        internal static string SceneRootNodeName {
+            get {
+                return ResourceManager.GetString("SceneRootNodeName", resourceCulture);
+            }
+        }
     }
 }

@@ -10,6 +10,7 @@ using GLTFRevitExport.Extensions;
 using GLTFRevitExport.GLTF.Containers;
 using GLTFRevitExport.GLTF.Schema;
 using GLTFRevitExport.GLTF.Extensions.BIM;
+using GLTFRevitExport.Properties;
 using System.Runtime.CompilerServices;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB.Visual;
@@ -571,7 +572,7 @@ namespace GLTFRevitExport {
                 // open a root node for the scene that transforms all
                 // its children to Y up
                 gltf.OpenNode(
-                    name: null,
+                    name: string.Format(StringLib.SceneRootNodeName, element.Name),
                     matrix: Transform.CreateRotation(new XYZ(1, 0, 0), -Math.PI / 2.0).ToGLTF(),
                     extras: null,
                     exts: null

@@ -46,18 +46,5 @@ namespace GLTFRevitExport.GLTF.Schema {
 
         [JsonProperty("roughnessFactor")]
         public float RoughnessFactor { get; set; }
-
-        // TODO: override
-        public override int GetHashCode() {
-            return base.GetHashCode();
-        }
-
-        public override bool Equals(object obj) {
-            if (obj is glTFPBRMetallicRoughness other)
-                return BaseColorFactor.SequenceEqual(other.BaseColorFactor)
-                    && MetallicFactor == other.MetallicFactor
-                    && RoughnessFactor == other.RoughnessFactor;
-            return false;
-        }
     }
 }

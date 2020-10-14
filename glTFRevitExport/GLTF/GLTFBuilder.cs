@@ -1,12 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Security.Cryptography;
+using System.Text;
 
 using Newtonsoft.Json;
 
-using GLTFRevitExport.GLTF.Containers;
 using GLTFRevitExport.GLTF.Schema;
 using GLTFRevitExport.Properties;
+using System.Text.RegularExpressions;
 
 namespace GLTFRevitExport.GLTF {
     #region Initialization, Completion
@@ -25,6 +29,30 @@ namespace GLTFRevitExport.GLTF {
             if (singleBinary) {
                 uint bufferIndex = 0;
                 foreach (var seg in _bufferSegments) {
+                    // align the data correctly
+                    uint dataSize = 0;
+                    // calculate necessary padding
+                    switch (seg.DataType) {
+                        case ComponentType.SHORT:
+                        case ComponentType.UNSIGNED_SHORT:
+                            dataSize = 2;
+                            break;
+                        case ComponentType.UNSIGNED_INT:
+                        case ComponentType.FLOAT:
+                            dataSize = 4;
+                            break;
+                    }
+                    if (dataSize > 0) {
+                        // add padding
+                        var bufferSize = (uint)bufferBytes.Count;
+                        var padding =
+                            (uint)(Math.Ceiling(bufferSize / (float)dataSize) * dataSize)
+                            - bufferSize;
+                        if (padding > 0)
+                            bufferBytes.AddRange(new byte[padding]);
+                    }
+
+                    // make the buffer view now
                     var bytes = seg.ToByteArray();
                     var bufferView = new glTFBufferView {
                         Buffer = bufferIndex,
@@ -50,7 +78,7 @@ namespace GLTFRevitExport.GLTF {
                 }
             }
             else {
-                // ?
+                // TODO: multiple binaries
             }
 
             var buffer = new glTFBuffer {
@@ -89,7 +117,7 @@ namespace GLTFRevitExport.GLTF {
         }
 
         abstract class BufferSegment<T> : BufferSegment {
-            protected T[] _data;
+            public T[] Data;
             protected T[] _min;
             protected T[] _max;
 
@@ -108,32 +136,35 @@ namespace GLTFRevitExport.GLTF {
                 }
             }
 
-            public override uint Count => (uint)_data.Length;
-        }
+            public override uint Count => (uint)Data.Length;
 
-        abstract class BufferFloatSegment : BufferSegment<float> {
-            public override ComponentType DataType => ComponentType.FLOAT;
-
-            public override byte[] ToByteArray() {
-                int dataSize = _data.Length * sizeof(float);
-                var byteArray = new byte[dataSize];
-                Buffer.BlockCopy(_data, 0, byteArray, 0, dataSize);
-                return byteArray;
+            public override bool Equals(object obj) {
+                if (obj is BufferSegment<T> other)
+                    return Data.SequenceEqual(other.Data);
+                return false;
             }
         }
 
-        class BufferVectorSegment : BufferFloatSegment {
+        class BufferVectorSegment : BufferSegment<float> {
             public override string Type => "VEC3";
+            public override ComponentType DataType => ComponentType.FLOAT;
             public override Targets Target => Targets.ARRAY_BUFFER;
 
             public BufferVectorSegment(float[] vectors) {
                 if (vectors.Length % 3 != 0)
                     throw new Exception(StringLib.ArrayIsNotVector3Data);
-                _data = vectors;
-                setBounds(_data);
+                Data = vectors;
+                setBounds(Data);
             }
 
-            public override uint Count => (uint)(_data.Length / 3);
+            public override uint Count => (uint)(Data.Length / 3);
+
+            public override byte[] ToByteArray() {
+                int dataSize = Data.Length * sizeof(float);
+                var byteArray = new byte[dataSize];
+                Buffer.BlockCopy(Data, 0, byteArray, 0, dataSize);
+                return byteArray;
+            }
 
             public void setBounds(float[] vectors) {
                 // TODO: improve logic and performance
@@ -151,27 +182,56 @@ namespace GLTFRevitExport.GLTF {
             }
         }
 
-        abstract class BufferScalarSegment : BufferSegment<uint> {
+        class BufferScalar1Segment : BufferSegment<byte> {
             public override string Type => "SCALAR";
-            public override ComponentType DataType => ComponentType.UNSIGNED_INT;
+            public override ComponentType DataType => ComponentType.UNSIGNED_BYTE;
             public override Targets Target => Targets.ELEMENT_ARRAY_BUFFER;
 
-            public BufferScalarSegment(uint[] scalars) {
-                _data = scalars;
-                _min = new uint[] { _data.Min() };
-                _max = new uint[] { _data.Max() };
+            public BufferScalar1Segment(byte[] scalars) {
+                Data = scalars;
+                _min = new byte[] { Data.Min() };
+                _max = new byte[] { Data.Max() };
+            }
+
+            public override byte[] ToByteArray() => Data;
+        }
+
+        class BufferScalar2Segment : BufferSegment<ushort> {
+            public override string Type => "SCALAR";
+            public override ComponentType DataType => ComponentType.UNSIGNED_SHORT;
+            public override Targets Target => Targets.ELEMENT_ARRAY_BUFFER;
+
+            public BufferScalar2Segment(ushort[] scalars) {
+                Data = scalars;
+                _min = new ushort[] { Data.Min() };
+                _max = new ushort[] { Data.Max() };
             }
 
             public override byte[] ToByteArray() {
-                int dataSize = _data.Length * sizeof(float);
+                int dataSize = Data.Length * sizeof(ushort);
                 var byteArray = new byte[dataSize];
-                Buffer.BlockCopy(_data, 0, byteArray, 0, dataSize);
+                Buffer.BlockCopy(Data, 0, byteArray, 0, dataSize);
                 return byteArray;
             }
         }
 
-        class BufferFaceSegment : BufferScalarSegment {
-            public BufferFaceSegment(uint[] faces) : base(faces) { }
+        class BufferScalar4Segment : BufferSegment<uint> {
+            public override string Type => "SCALAR";
+            public override ComponentType DataType => ComponentType.UNSIGNED_INT;
+            public override Targets Target => Targets.ELEMENT_ARRAY_BUFFER;
+
+            public BufferScalar4Segment(uint[] scalars) {
+                Data = scalars;
+                _min = new uint[] { Data.Min() };
+                _max = new uint[] { Data.Max() };
+            }
+
+            public override byte[] ToByteArray() {
+                int dataSize = Data.Length * sizeof(uint);
+                var byteArray = new byte[dataSize];
+                Buffer.BlockCopy(Data, 0, byteArray, 0, dataSize);
+                return byteArray;
+            }
         }
 
         private readonly List<BufferSegment> _bufferSegments = new List<BufferSegment>();
@@ -342,7 +402,24 @@ namespace GLTFRevitExport.GLTF {
                 //    nBuffIdx = _bufferSegments.Count - 1;
                 //}
 
-                var faceBuffer = new BufferFaceSegment(faces);
+                uint maxIndex = faces.Max();
+                BufferSegment faceBuffer;
+                if ( maxIndex <= 0xFF ) {
+                    var byteFaces = new List<byte>();
+                    foreach (var face in faces)
+                        byteFaces.Add(Convert.ToByte(face));
+                    faceBuffer = new BufferScalar1Segment(byteFaces.ToArray());
+                }
+                else if (maxIndex <= 0xFFFF) {
+                    var shortFaces = new List<ushort>();
+                    foreach (var face in faces)
+                        shortFaces.Add(Convert.ToUInt16(face));
+                    faceBuffer = new BufferScalar2Segment(shortFaces.ToArray());
+                }
+                else {
+                    faceBuffer = new BufferScalar4Segment(faces);
+                }
+
                 var fBuffIdx = _bufferSegments.IndexOf(faceBuffer);
                 if (fBuffIdx < 0) {
                     _bufferSegments.Add(faceBuffer);

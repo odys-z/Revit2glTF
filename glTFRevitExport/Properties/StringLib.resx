@@ -144,4 +144,7 @@
   <data name="NoSupportedView" xml:space="preserve">
     <value>Exporting non-3d views are not supported in this Revit version</value>
   </data>
+  <data name="SceneRootNodeName" xml:space="preserve">
+    <value>{0} Root</value>
+  </data>
 </root>
