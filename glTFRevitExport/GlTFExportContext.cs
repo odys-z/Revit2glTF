@@ -292,16 +292,17 @@ namespace glTFRevitExport
         public RenderNodeAction OnInstanceBegin(InstanceNode node)
         {
             Debug.WriteLine(String.Format("{0}OnInstanceBegin", manager.formatDebugHeirarchy));
-
+            
             ElementId symId = node.GetSymbolId();
             Element symElem = _doc.GetElement(symId);
 
             Debug.WriteLine(String.Format("{2}OnInstanceBegin: {0}-{1}", symId, symElem.Name, manager.formatDebugHeirarchy));
 
             var nodeXform = node.GetTransform();
-            //manager.OpenNode(symElem, nodeXform.IsIdentity ? null : nodeXform, true);
-            if (!nodeXform.IsIdentity)
-                manager.UpdateNodeTransform(nodeXform);
+            if (symElem.Category.Id.IntegerValue == (int)BuiltInCategory.OST_StructuralColumns)
+                manager.OpenNode(symElem, null, true);
+            else
+                manager.OpenNode(symElem, nodeXform.IsIdentity ? null : nodeXform, true);
 
             return RenderNodeAction.Proceed;
         }
