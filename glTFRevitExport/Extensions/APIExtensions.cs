@@ -48,7 +48,6 @@ namespace GLTFRevitExport.Extensions {
         static public float[] ToGLTF(this Transform xform) {
             if (xform == null || xform.IsIdentity) return null;
 
-            //var yUpXform = xform * Transform.CreateRotation(new XYZ(1,0,0), -1.570796);
             var bx = xform.BasisX;
             var by = xform.BasisY;
             var bz = xform.BasisZ;

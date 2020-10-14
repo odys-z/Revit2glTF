@@ -23,7 +23,7 @@ namespace GLTFRevitExport.GLTF.Schema {
         public List<glTFScene> Scenes { get; set; } = new List<glTFScene>();
 
         [JsonProperty("scene")]
-        public glTFScene StartingScene { get; set; } = null;
+        public uint StartingScene { get; set; } = 0;
 
         [JsonProperty("nodes")]
         public glTFNodes Nodes { get; set; } = new glTFNodes();

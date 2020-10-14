@@ -64,18 +64,9 @@ namespace GLTFRevitExport {
             public float Z { get; set; }
 
             public VectorData(XYZ vector) {
-                //var xform = Transform.CreateRotation(new XYZ(1, 0, 0), -1.570796);
-                //vector = xform.OfPoint(vector);
-
                 X = vector.X.ToGLTFLength();
                 Y = vector.Y.ToGLTFLength();
                 Z = vector.Z.ToGLTFLength();
-
-                // Y Up!
-                ////X = -X;
-                //float tmp = Y;
-                //Y = Z;
-                //Z = tmp;
             }
 
             public float[] ToArray() => new float[] { X, Y, Z };
@@ -577,12 +568,23 @@ namespace GLTFRevitExport {
                     },
                     extras: extrasBuilder(element)
                     );
+                // open a root node for the scene that transforms all
+                // its children to Y up
+                gltf.OpenNode(
+                    name: null,
+                    matrix: Transform.CreateRotation(new XYZ(1, 0, 0), -Math.PI / 2.0).ToGLTF(),
+                    extras: null,
+                    exts: null
+                    );
             }
         }
 
         class OnSceneEndAction : ExporterEndAction {
             public override void Execute(GLTFBuilder gltf) {
                 Logger.Log("- view end");
+                // close root node
+                gltf.CloseNode();
+                // close scene
                 gltf.CloseScene();
             }
         }
@@ -900,7 +902,6 @@ namespace GLTFRevitExport {
                         break;
                 }
             }
-
 
             Logger.Log("- end build");
 
