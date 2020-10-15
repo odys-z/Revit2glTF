@@ -12,6 +12,7 @@ using GLTFRevitExport.GLTF;
 namespace GLTFRevitExport.Extensions {
     internal static class StringExtensions {
         public static string UriEncode(this string source)
-            => HttpUtility.UrlPathEncode(source);
+            //=> HttpUtility.UrlPathEncode(source);
+            => source;
     }
 }

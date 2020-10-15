@@ -133,6 +133,15 @@ namespace GLTFRevitExport.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Normals length must match number of vertices.
+        /// </summary>
+        internal static string NormalsMustMatchVertexCount {
+            get {
+                return ResourceManager.GetString("NormalsMustMatchVertexCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Exporting non-3d views are not supported in this Revit version.
         /// </summary>
         internal static string NoSupportedView {
@@ -147,6 +156,15 @@ namespace GLTFRevitExport.Properties {
         internal static string SceneRootNodeName {
             get {
                 return ResourceManager.GetString("SceneRootNodeName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Vertex and Face info is required.
+        /// </summary>
+        internal static string VertexFaceIsRequired {
+            get {
+                return ResourceManager.GetString("VertexFaceIsRequired", resourceCulture);
             }
         }
     }

@@ -143,6 +143,10 @@ namespace GLTFRevitExport.GLTF {
                     return Data.SequenceEqual(other.Data);
                 return false;
             }
+
+            public override int GetHashCode() {
+                return base.GetHashCode();
+            }
         }
 
         class BufferVectorSegment : BufferSegment<float> {
@@ -154,7 +158,7 @@ namespace GLTFRevitExport.GLTF {
                 if (vectors.Length % 3 != 0)
                     throw new Exception(StringLib.ArrayIsNotVector3Data);
                 Data = vectors;
-                setBounds(Data);
+                SetBounds(Data);
             }
 
             public override uint Count => (uint)(Data.Length / 3);
@@ -166,7 +170,7 @@ namespace GLTFRevitExport.GLTF {
                 return byteArray;
             }
 
-            public void setBounds(float[] vectors) {
+            private void SetBounds(float[] vectors) {
                 // TODO: improve logic and performance
                 List<float> vx = new List<float>();
                 List<float> vy = new List<float>();
@@ -307,7 +311,7 @@ namespace GLTFRevitExport.GLTF {
             };
 
             var idx = _gltf.Nodes.Append(node);
-            return appendNodeToScene(idx);
+            return AppendNodeToScene(idx);
         }
 
         public uint OpenNode(string name, float[] matrix,
@@ -355,7 +359,7 @@ namespace GLTFRevitExport.GLTF {
 
         public uint OpenExistingNode(uint nodeIndex) {
             if (_gltf.Nodes.Contains(nodeIndex)) {
-                appendNodeToScene(nodeIndex);
+                AppendNodeToScene(nodeIndex);
                 _gltf.Nodes.Open(nodeIndex);
                 return nodeIndex;
             }
@@ -387,7 +391,12 @@ namespace GLTFRevitExport.GLTF {
 
         #region Node Mesh
         public uint AddPrimitive(float[] vertices, float[] normals, uint[] faces) {
+            // ensure vertex and face data is available
+            if (vertices is null || faces is null)
+                throw new Exception(StringLib.VertexFaceIsRequired);
+            
             if (PeekNode() is glTFNode) {
+                // process vertex data
                 var vertexBuffer = new BufferVectorSegment(vertices);
                 var vBuffIdx = _bufferSegments.IndexOf(vertexBuffer);
                 if (vBuffIdx < 0) {
@@ -395,13 +404,18 @@ namespace GLTFRevitExport.GLTF {
                     vBuffIdx = _bufferSegments.Count - 1;
                 }
 
-                //var normalBuffer = new BufferVectorSegment(normals);
-                //var nBuffIdx = _bufferSegments.IndexOf(normalBuffer);
-                //if (nBuffIdx < 0) {
-                //    _bufferSegments.Add(normalBuffer);
-                //    nBuffIdx = _bufferSegments.Count - 1;
-                //}
-
+                // process normal data if available
+                int nBuffIdx = -1;
+                if (normals != null) {
+                    var normalBuffer = new BufferVectorSegment(normals);
+                    nBuffIdx = _bufferSegments.IndexOf(normalBuffer);
+                    if (nBuffIdx < 0) {
+                        _bufferSegments.Add(normalBuffer);
+                        nBuffIdx = _bufferSegments.Count - 1;
+                    }
+                }
+                
+                // process face data
                 uint maxIndex = faces.Max();
                 BufferSegment faceBuffer;
                 if ( maxIndex <= 0xFF ) {
@@ -426,15 +440,18 @@ namespace GLTFRevitExport.GLTF {
                     fBuffIdx = _bufferSegments.Count - 1;
                 }
 
+                // queue the primitive
                 _primQueue.Enqueue(
                     new glTFMeshPrimitive {
                         Indices = (uint)fBuffIdx,
                         Attributes = new glTFAttributes {
                             Position = (uint)vBuffIdx,
-                            //Normal = (uint)nBuffIdx,
+                            Normal = nBuffIdx >= 0 ? (uint)nBuffIdx : (uint?)null
                         }
                     }
                 );
+
+                // return primitive index
                 return (uint)_primQueue.Count - 1;
             }
             else
@@ -478,7 +495,7 @@ namespace GLTFRevitExport.GLTF {
         }
 
         public void UpdateMaterial(uint primitiveIndex, uint materialIndex) {
-            if (PeekNode() is glTFNode currentNode) {
+            if (PeekNode() is glTFNode) {
                 if (_primQueue.Count > primitiveIndex) {
                     var prim = _primQueue.ElementAt((int)primitiveIndex);
                     prim.Material = materialIndex;
@@ -496,7 +513,7 @@ namespace GLTFRevitExport.GLTF {
 
     #region Privates
     internal sealed partial class GLTFBuilder {
-        private uint appendNodeToScene(uint idx) {
+        private uint AppendNodeToScene(uint idx) {
             if (PeekScene() is glTFScene scene) {
                 if (!_gltf.Nodes.IsOpen())
                     scene.Nodes.Add(idx);

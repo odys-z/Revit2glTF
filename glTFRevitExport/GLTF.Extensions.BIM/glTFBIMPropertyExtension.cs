@@ -16,7 +16,10 @@ using System.Runtime.Serialization;
 
 namespace GLTFRevitExport.GLTF.Extensions.BIM {
     [Serializable]
+#pragma warning disable IDE1006 // Naming Styles
     internal abstract class glTFBIMPropertyExtension : glTFBIMExtension {
+#pragma warning restore IDE1006 // Naming Styles
+        private const string _revitPrefix = "Revit";
 
         private readonly BuiltInParameter[] excludeBuiltinParams =
             Enum.GetNames(typeof(BuiltInParameter))
@@ -34,21 +37,21 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
         internal glTFBIMPropertyExtension(Element e, bool includeParameters = true) {
             // identity data
             Id = e.GetId();
-            Taxonomies = getTaxonomies(e);
+            Taxonomies = GetTaxonomies(e);
             // TODO: get correct uniformat category
             Classes.Add(
-                $"uniformat/{getParamValue(e, BuiltInParameter.UNIFORMAT_CODE)}".UriEncode()
+                $"uniformat/{GetParamValue(e, BuiltInParameter.UNIFORMAT_CODE)}".UriEncode()
                 );
             Classes.Add(
-                $"omniclass/{getParamValue(e, BuiltInParameter.OMNICLASS_CODE)}".UriEncode()
+                $"omniclass/{GetParamValue(e, BuiltInParameter.OMNICLASS_CODE)}".UriEncode()
                 );
-            
+
             // include parameters
             if (includeParameters)
-                setProperties(e);
+                SetProperties(e);
         }
 
-        private void setProperties(Element e) {
+        private void SetProperties(Element e) {
             // exclude list for parameters that are processed by this
             // constructor and should not be included in 'this.Properties'
             var excludeParams = new List<BuiltInParameter>(excludeBuiltinParams);
@@ -64,8 +67,8 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
                 if (apiParamInfo != null) {
                     object paramValue =
                         isType ?
-                        getParamValue(e, apiParamInfo.TypeParam) :
-                        getParamValue(e, apiParamInfo.InstanceParam);
+                        GetParamValue(e, apiParamInfo.TypeParam) :
+                        GetParamValue(e, apiParamInfo.InstanceParam);
 
                     // if there is compatible value, set the prop on this
                     if (paramValue != null
@@ -78,21 +81,63 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
                 }
             }
 
-            Properties = getParamValues(e, exclude: excludeParams);
+            Properties = GetParamValues(e, exclude: excludeParams);
         }
 
-        private List<string> getTaxonomies(Element e) {
-            // TODO: add all categories
-            var categories = new List<string>();
-            if (e.Category != null)
-                categories.Add(
-                        $"revit/{e.Category.Name}".UriEncode()
+        private List<string> GetTaxonomies(Element e) {
+            var taxonomies = new List<string>();
+            // types show the hierarchical structure of data (vertical)
+            if (e is ElementType et) {
+                string categoryName = et.Category != null ? et.Category.Name : et.ToString();
+                string familyName = et.FamilyName;
+                taxonomies.Add(
+                        $"{_revitPrefix}/{categoryName}/{familyName}".UriEncode()
                     );
-            // TODO: add phases
-            // TODO: add design options
-            // TODO: add worksets
-            // TODO: add groups?
-            return categories;
+            }
+            // instances show various containers that include them (horizontal)
+            else {
+                // NOTE: Subcategories are another container but they are applied
+                // to sub-elements in external families only
+                // Phases
+                string createdPhaseName = e.Document.GetElement(e.CreatedPhaseId)?.Name;
+                if (createdPhaseName != null)
+                    taxonomies.Add(
+                            $"{_revitPrefix}/Phases/Created/{createdPhaseName}".UriEncode()
+                        );
+                string demolishedPhaseName = e.Document.GetElement(e.DemolishedPhaseId)?.Name;
+                if (demolishedPhaseName != null)
+                    taxonomies.Add(
+                        $"{_revitPrefix}/Phases/Demolished/{demolishedPhaseName}".UriEncode()
+                    );
+
+                // Design options
+                string designOptsName = e.DesignOption?.Name;
+                if (designOptsName != null)
+                    taxonomies.Add(
+                        $"{_revitPrefix}/DesignOptions/{designOptsName}".UriEncode()
+                    );
+
+                // Worksets
+                if (e.Document.IsWorkshared
+                        && e.WorksetId != WorksetId.InvalidWorksetId) {
+                    var ws = e.Document.GetWorksetTable().GetWorkset(e.WorksetId);
+                    if (ws != null)
+                        taxonomies.Add(
+                            $"{_revitPrefix}/WorkSets/{ws.Name}".UriEncode()
+                        );
+                }
+
+                // Groups
+                if (e.GroupId != ElementId.InvalidElementId) {
+                    var grp = e.Document.GetElement(e.GroupId);
+                    if (grp != null)
+                        taxonomies.Add(
+                            $"{_revitPrefix}/Groups/{grp.Name}".UriEncode()
+                        );
+                }
+            }
+
+            return taxonomies;
         }
 
         /// <summary>
@@ -101,7 +146,7 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
         /// Return a dictionary of all the given 
         /// element parameter names and values.
         /// </summary>
-        private Dictionary<string, object> getParamValues(Element e, List<BuiltInParameter> exclude = null) {
+        private Dictionary<string, object> GetParamValues(Element e, List<BuiltInParameter> exclude = null) {
             // private function to find a parameter in a list of builins
             bool containsParameter(List<BuiltInParameter> paramList, Parameter param) {
                 if (param.Definition is InternalDefinition paramDef)
@@ -132,7 +177,7 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
             return paramData;
         }
 
-        private object getParamValue(Element e, BuiltInParameter p) {
+        private object GetParamValue(Element e, BuiltInParameter p) {
             if (e.get_Parameter(p) is Parameter param)
                 return param.ToGLTF();
             return null;

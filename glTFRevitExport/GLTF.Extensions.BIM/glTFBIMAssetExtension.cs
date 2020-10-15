@@ -9,30 +9,32 @@ using GLTFRevitExport.Extensions;
 
 namespace GLTFRevitExport.GLTF.Extensions.BIM {
     [Serializable]
+#pragma warning disable IDE1006 // Naming Styles
     internal class glTFBIMAssetExtension : glTFBIMExtension {
+#pragma warning restore IDE1006 // Naming Styles
         internal glTFBIMAssetExtension(Document d, bool includeParameters = true) : base() {
-            App = getAppName(d);
-            Id = getDocumentId(d).ToString();
+            App = GetAppName(d);
+            Id = GetDocumentId(d).ToString();
             Title = d.Title;
             Source = d.PathName;
             if (includeParameters)
-                Properties = getProjectInfo(d);
+                Properties = GetProjectInfo(d);
         }
 
-        private static string getAppName(Document doc) {
+        private static string GetAppName(Document doc) {
             var app = doc.Application;
             var hostName = app.VersionName;
             hostName = hostName.Replace(app.VersionNumber, app.SubVersionNumber);
             return $"{hostName} {app.VersionBuild}";
         }
 
-        private static Guid getDocumentId(Document doc) {
+        private static Guid GetDocumentId(Document doc) {
             if (doc?.IsValidObject != true)
                 return Guid.Empty;
             return ExportUtils.GetGBXMLDocumentId(doc);
         }
 
-        private static Dictionary<string, object> getProjectInfo(Document doc) {
+        private static Dictionary<string, object> GetProjectInfo(Document doc) {
             var docProps = new Dictionary<string, object>();
             if (doc != null) {
                 var pinfo = doc.ProjectInformation;

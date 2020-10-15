@@ -93,7 +93,7 @@ namespace GLTFRevitExport.Extensions {
             return null;
         }
         
-        public static bool IsCategory(this Category c, BuiltInCategory bic)
+        public static bool IsBIC(this Category c, BuiltInCategory bic)
         => c.Id.IntegerValue == (int)bic;
     }
 }

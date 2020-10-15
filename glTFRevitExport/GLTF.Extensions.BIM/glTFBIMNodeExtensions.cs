@@ -15,7 +15,9 @@ using GLTFRevitExport.Properties;
 using System.Runtime.Serialization;
 
 namespace GLTFRevitExport.GLTF.Extensions.BIM {
+#pragma warning disable IDE1006 // Naming Styles
     internal class glTFBIMNodeExtension : glTFBIMPropertyExtension {
+#pragma warning restore IDE1006 // Naming Styles
         internal glTFBIMNodeExtension(Element e,
                                       Func<object, string[]> zoneFinder,
                                       bool includeParameters = true)
@@ -40,7 +42,9 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
     }
 
     [Serializable]
+#pragma warning disable IDE1006 // Naming Styles
     internal class glTFBIMBounds : ISerializable {
+#pragma warning restore IDE1006 // Naming Styles
         internal glTFBIMBounds(BoundingBoxXYZ bbox) {
             Min = new glTFBIMVector(bbox.Min);
             Max = new glTFBIMVector(bbox.Max);
@@ -72,7 +76,9 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
 
     // TODO: serialize into 3 double values
     [Serializable]
+#pragma warning disable IDE1006 // Naming Styles
     internal class glTFBIMVector {
+#pragma warning restore IDE1006 // Naming Styles
         public float X { get; set; }
         public float Y { get; set; }
         public float Z { get; set; }

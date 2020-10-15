@@ -15,7 +15,9 @@ using GLTFRevitExport.Properties;
 
 namespace GLTFRevitExport.GLTF.Extensions.BIM {
     [Serializable]
+#pragma warning disable IDE1006 // Naming Styles
     internal abstract class glTFBIMExtension: glTFExtension {
+#pragma warning restore IDE1006 // Naming Styles
         internal glTFBIMExtension() { }
 
         internal override string Name => StringLib.GLTFExtensionName;

@@ -23,7 +23,7 @@ namespace GLTFRevitExport {
             _cfgs = configs is null ? new GLTFExportConfigs() : configs;
 
             // reset stacks
-            resetExporter();
+            ResetExporter();
             // place doc on the stack
             _docStack.Push(doc);
         }
@@ -106,10 +106,30 @@ namespace GLTFRevitExport {
         }
 
         class PrimitiveData {
+            private List<VectorData> _normals = null;
+
             // TODO: ensure normals and vertices have the same length
-            public List<VectorData> Vertices = new List<VectorData>();
-            public List<VectorData> Normals = new List<VectorData>();
-            public List<FacetData> Faces = new List<FacetData>();
+            public List<VectorData> Vertices { get; private set; }
+            public List<VectorData> Normals {
+                get => _normals;
+                set {
+                    if (value is null)
+                        return;
+
+                    if (value.Count != Vertices.Count)
+                        throw new Exception(StringLib.NormalsMustMatchVertexCount);
+
+                    _normals = value;
+                }
+            }
+            public List<FacetData> Faces { get; private set; }
+
+            public PrimitiveData(List<VectorData> vertices, List<FacetData> faces) {
+                if (vertices is null || faces is null)
+                    throw new Exception(StringLib.VertexFaceIsRequired);
+                Vertices = vertices;
+                Faces = faces;
+            }
 
             public static PrimitiveData operator +(PrimitiveData left, PrimitiveData right) {
                 int startIdx = left.Vertices.Count;
@@ -119,18 +139,21 @@ namespace GLTFRevitExport {
                 vertices.AddRange(right.Vertices);
 
                 // new normals array
-                var normals = new List<VectorData>(left.Normals);
-                normals.AddRange(right.Normals);
+                // NOTE: we are dropping the normals if either side
+                // is missing normal definition
+                List<VectorData> normals = null;
+                if (left.Normals != null && right.Normals != null) {
+                    normals = new List<VectorData>(left.Normals);
+                    normals.AddRange(right.Normals);
+                }
 
                 // shift face indices
                 var faces = new List<FacetData>(left.Faces);
                 foreach (var faceIdx in right.Faces)
                     faces.Add(faceIdx + (ushort)startIdx);
 
-                return new PrimitiveData {
-                    Vertices = vertices,
+                return new PrimitiveData(vertices, faces) {
                     Normals = normals,
-                    Faces = faces,
                 };
             }
         }
@@ -197,7 +220,7 @@ namespace GLTFRevitExport {
         public bool IsCanceled() {
             if (_cfgs.CancelToken.IsCancellationRequested) {
                 Logger.Log("x cancelled");
-                resetExporter();
+                ResetExporter();
             }
             return _cfgs.CancelToken.IsCancellationRequested;
         }
@@ -210,7 +233,7 @@ namespace GLTFRevitExport {
             // if active doc and view is valid
             if (_docStack.Peek() is Document doc) {
                 if (doc.GetElement(node.ViewId) is View view) {
-                    if (recordOrSkip(view, "x duplicate view", setFlag: true))
+                    if (RecordOrSkip(view, "x duplicate view", setFlag: true))
                         return RenderNodeAction.Skip;
 
                     // if active doc and view is valid
@@ -239,7 +262,6 @@ namespace GLTFRevitExport {
         public RenderNodeAction OnElementBegin(ElementId eid) {
             if (_docStack.Peek() is Document doc) {
                 Element e = doc.GetElement(eid);
-                ElementType et = doc.GetElement(e.GetTypeId()) as ElementType;
 
                 // TODO: take a look at elements that have no type
                 // skipping these for now
@@ -247,7 +269,7 @@ namespace GLTFRevitExport {
                 // DB.Opening
                 // DB.FaceSplitter
                 // DB.Spatial
-                if (et is null)
+                if (!(doc.GetElement(e.GetTypeId()) is ElementType et))
                     goto SkipElementLabel;
 
                 // TODO: fix inneficiency in getting linked elements multiple times
@@ -256,7 +278,7 @@ namespace GLTFRevitExport {
                 // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#nodes-and-hierarchy
                 if (!doc.IsLinked) {
                     // check if this element has been processed before
-                    if (recordOrSkip(e, "x duplicate element", setFlag: true))
+                    if (RecordOrSkip(e, "x duplicate element", setFlag: true))
                         return RenderNodeAction.Skip;
                 }
 
@@ -268,13 +290,10 @@ namespace GLTFRevitExport {
                     case RevitLinkInstance linkInst:
                         if (_cfgs.ExportLinkedModels) {
                             Logger.LogElement("+ element (link) begin", e);
-                            var lixform =
-                                linkInst.GetTotalTransform().ToGLTF();
                             _actions.Enqueue(
                                 new OnNodeBeginAction(
                                     element: e,
                                     type: et,
-                                    xform: lixform,
                                     link: true
                                     )
                                 );
@@ -287,13 +306,10 @@ namespace GLTFRevitExport {
 
                     case FamilyInstance famInst:
                         Logger.LogElement("+ element (instance) begin", e);
-                        var fixform =
-                            famInst.GetTotalTransform().ToGLTF();
                         _actions.Enqueue(
                             new OnNodeBeginAction(
                                 element: famInst,
-                                type: et,
-                                xform: fixform
+                                type: et
                                 )
                             );
                         break;
@@ -305,13 +321,12 @@ namespace GLTFRevitExport {
                             _actions.Enqueue(
                                 new OnNodeBeginAction(
                                     element: generic,
-                                    type: et,
-                                    xform: null
+                                    type: et
                                     )
                                 );
                         }
                         else {
-                            if (c.IsCategory(BuiltInCategory.OST_Cameras)) {
+                            if (c.IsBIC(BuiltInCategory.OST_Cameras)) {
                                 // TODO: enqueue camera node
                                 goto SkipElementLabel;
                             }
@@ -321,8 +336,7 @@ namespace GLTFRevitExport {
                                 _actions.Enqueue(
                                     new OnNodeBeginAction(
                                         element: generic,
-                                        type: et,
-                                        xform: null
+                                        type: et
                                         )
                                     );
                             }
@@ -356,17 +370,21 @@ namespace GLTFRevitExport {
             }
         }
 
-        // This is called when family instances are encountered,
-        // after OnElementBegin. We're using it here to maintain the transform
-        // stack for that element's heirarchy.
+        // This is called when family instances are encountered, after OnElementBegin
         public RenderNodeAction OnInstanceBegin(InstanceNode node) {
-            Logger.Log("+ instance start");
-            Logger.Log("> transform");
+            Logger.Log("+ instance start");            
             return RenderNodeAction.Proceed;
         }
 
-        // do nothing. OnElementClose will close the element later
         public void OnInstanceEnd(InstanceNode node) {
+            // NOTE: only add the transform if geometry has already collected
+            // for this instance, from the OnFace and OnPolymesh calls between
+            // OnInstanceBegin and  OnInstanceEnd
+            if (_partStack.Count > 0) {
+                Logger.Log("> transform");
+                float[] xform = node.GetTransform().ToGLTF();
+                _actions.Enqueue(new OnTransformAction(xform));
+            }
             Logger.Log("- instance end");
         }
         #endregion
@@ -395,6 +413,10 @@ namespace GLTFRevitExport {
                 _skipElement = false;
             else {
                 if (_cfgs.ExportLinkedModels) {
+                    Logger.Log("> transform (link)");
+                    float[] xform = node.GetTransform().ToGLTF();
+                    _actions.Enqueue(new OnTransformAction(xform));
+
                     Logger.Log("- link document end");
                     _docStack.Pop();
                 }
@@ -435,7 +457,7 @@ namespace GLTFRevitExport {
                 // or there is no material
                 // lets grab the color and transparency from node
                 else {
-                    Logger.Log("x material empty");
+                    Logger.Log("x material empty (use color)");
                     // if mesh stack has a mesh
                     if (_partStack.Count > 0
                             && _partStack.Peek() is PartData partPrim) {
@@ -467,21 +489,30 @@ namespace GLTFRevitExport {
         // Runs for every polymesh being processed. Typically this is a single
         // face of an element's mesh
         public void OnPolymesh(PolymeshTopology polymesh) {
-            // TODO: anything to do with .DistributionOfNormals or .GetUV?
+            // TODO: anything to do with .GetUV?
             if (_partStack.Count > 0) {
                 Logger.Log("> polymesh");
                 var activePart = _partStack.Peek();
 
-                var newPrim = new PrimitiveData {
-                    Vertices = polymesh.GetPoints().Select(x => new VectorData(x)).ToList(),
-                    Normals = polymesh.GetNormals().Select(x => new VectorData(x)).ToList(),
-                    Faces = polymesh.GetFacets().Select(x => new FacetData(x)).ToList()
+                List<VectorData> vertices =
+                    polymesh.GetPoints().Select(x => new VectorData(x)).ToList();
+
+                List<VectorData> normals = null;
+                // TODO: what about the other .DistributionOfNormals options?
+                if (polymesh.DistributionOfNormals == DistributionOfNormals.AtEachPoint)
+                    normals = polymesh.GetNormals().Select(x => new VectorData(x)).ToList();
+
+                List<FacetData> faces =
+                    polymesh.GetFacets().Select(x => new FacetData(x)).ToList();
+
+                var newPrim = new PrimitiveData(vertices, faces) {
+                    Normals = normals,
                 };
 
                 if (activePart.Primitive is null)
                     activePart.Primitive = newPrim;
                 else
-                    activePart.Primitive = activePart.Primitive + newPrim;
+                    activePart.Primitive += newPrim;
             }
         }
 
@@ -591,15 +622,12 @@ namespace GLTFRevitExport {
         }
 
         class OnNodeBeginAction : ExporterBeginAction {
-            private readonly float[] _xform;
             private readonly bool _link;
             private readonly ElementType _elementType;
 
-            public OnNodeBeginAction(Element element, ElementType type,
-                                     float[] xform, bool link = false)
+            public OnNodeBeginAction(Element element, ElementType type, bool link = false)
                 : base(element) {
                 _elementType = type;
-                _xform = xform;
                 _link = link;
             }
 
@@ -611,14 +639,14 @@ namespace GLTFRevitExport {
 
                 // node filter to pass to gltf builder
                 string targetId = string.Empty;
-                Func<glTFNode, bool> nodeFilter = node => {
+                bool nodeFilter(glTFNode node) {
                     if (node.Extensions != null) {
                         foreach (var ext in node.Extensions)
                             if (ext.Value is glTFBIMNodeExtension nodeExt)
                                 return nodeExt.Id == targetId;
                     }
                     return false;
-                };
+                }
 
                 // create a node for its type
                 // attemp at finding previously created node for this type
@@ -656,7 +684,7 @@ namespace GLTFRevitExport {
                 else {
                     var newNodeIdx = gltf.OpenNode(
                         name: element.Name,
-                        matrix: _xform,
+                        matrix: null,
                         exts: new glTFExtension[] {
                             new glTFBIMNodeExtension(element, zoneFinder, IncludeProperties)
                         },
@@ -665,7 +693,7 @@ namespace GLTFRevitExport {
 
                     var bbox = element.get_BoundingBox(null);
                     if (bbox != null)
-                        updateBounds(
+                        UpdateBounds(
                             gltf: gltf,
                             idx: newNodeIdx,
                             bounds: new glTFBIMBounds(bbox)
@@ -673,7 +701,7 @@ namespace GLTFRevitExport {
                 }
             }
 
-            private void updateBounds(GLTFBuilder gltf, uint idx, glTFBIMBounds bounds) {
+            private void UpdateBounds(GLTFBuilder gltf, uint idx, glTFBIMBounds bounds) {
                 glTFNode node = gltf.GetNode(idx);
                 if (node.Extensions != null) {
                     foreach (var ext in node.Extensions) {
@@ -685,7 +713,7 @@ namespace GLTFRevitExport {
 
                             int parentIdx = gltf.FindParentNode(idx);
                             if (parentIdx >= 0)
-                                updateBounds(gltf, (uint)parentIdx, nodeExt.Bounds);
+                                UpdateBounds(gltf, (uint)parentIdx, nodeExt.Bounds);
                         }
                     }
                 }
@@ -703,8 +731,23 @@ namespace GLTFRevitExport {
             }
         }
 
+        class OnTransformAction : BaseExporterAction {
+            private readonly float[] _xform;
+
+            public OnTransformAction(float[] xform) => _xform = xform;
+
+            public override void Execute(GLTFBuilder gltf) {
+                if (gltf.GetActiveNode() is glTFNode activeNode) {
+                    Logger.Log("> transform");
+                    activeNode.Matrix = _xform;
+                }
+                else
+                    Logger.Log("x transform");
+            }
+        }
+
         class OnPartNodeAction : BaseExporterAction {
-            private PartData _partp;
+            private readonly PartData _partp;
 
             public OnPartNodeAction(PartData partp) => _partp = partp;
 
@@ -713,12 +756,14 @@ namespace GLTFRevitExport {
 
                 // make a new mesh and assign the new material
                 var vertices = new List<float>();
-                foreach(var vec in _partp.Primitive.Vertices)
+                foreach (var vec in _partp.Primitive.Vertices)
                     vertices.AddRange(vec.ToArray());
-                
+
                 var normals = new List<float>();
-                foreach (var vec in _partp.Primitive.Normals)
-                    normals.AddRange(vec.ToArray());
+                if (_partp.Primitive.Normals != null) {
+                    foreach (var vec in _partp.Primitive.Normals)
+                        normals.AddRange(vec.ToArray());
+                }
 
                 var faces = new List<uint>();
                 foreach (var facet in _partp.Primitive.Faces)
@@ -726,12 +771,12 @@ namespace GLTFRevitExport {
 
                 var primIndex = gltf.AddPrimitive(
                     vertices: vertices.ToArray(),
-                    normals: normals.ToArray(),
+                    normals: normals.Count > 0 ? normals.ToArray() : null,
                     faces: faces.ToArray()
                     );
 
                 Logger.Log("> material");
-                
+
                 // if material information is not provided, make a material
                 // based on color and transparency
                 if (_partp.Material is null) {
@@ -803,7 +848,7 @@ namespace GLTFRevitExport {
         /// </summary>
         /// <param name="e">Target element</param>
         /// <returns>True if element should be skipped</returns>
-        private bool recordOrSkip(Element e, string skipMessage, bool setFlag = false) {
+        private bool RecordOrSkip(Element e, string skipMessage, bool setFlag = false) {
             bool skip = false;
             if (e is null) {
                 Logger.Log(skipMessage);
@@ -821,7 +866,7 @@ namespace GLTFRevitExport {
             return skip;
         }
 
-        private void resetExporter() {
+        private void ResetExporter() {
             // reset the logger
             Logger.Reset();
             _actions.Clear();
