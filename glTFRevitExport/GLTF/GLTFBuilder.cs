@@ -88,7 +88,7 @@ namespace GLTFRevitExport.GLTF {
             _gltf.Buffers.Add(buffer);
 
             // store snapshot of collected data into a gltf structure
-            return new Tuple<string, List<byte[]>> (
+            return new Tuple<string, List<byte[]>>(
                 JsonConvert.SerializeObject(
                     _gltf,
                     new JsonSerializerSettings {
@@ -117,6 +117,7 @@ namespace GLTFRevitExport.GLTF {
         }
 
         abstract class BufferSegment<T> : BufferSegment {
+            private string _hash = null;
             public T[] Data;
             protected T[] _min;
             protected T[] _max;
@@ -140,12 +141,20 @@ namespace GLTFRevitExport.GLTF {
 
             public override bool Equals(object obj) {
                 if (obj is BufferSegment<T> other)
-                    return Data.SequenceEqual(other.Data);
+                    return GetHashCode() == other.GetHashCode();
                 return false;
             }
 
             public override int GetHashCode() {
-                return base.GetHashCode();
+                if (_hash is null)
+                    _hash = ComputeHash();
+                return _hash.GetHashCode();
+            }
+
+            private string ComputeHash() {
+                return Encoding.Default.GetString(
+                    SHA1.Create().ComputeHash(ToByteArray())
+                   );
             }
         }
 
@@ -371,12 +380,19 @@ namespace GLTFRevitExport.GLTF {
             if (PeekNode() is glTFNode currentNode) {
                 if (_primQueue.Count > 0) {
                     // combine all collected primitives into a mesh
-                    _gltf.Meshes.Add(
-                        new glTFMesh {
-                            Primitives = _primQueue.ToList()
-                        }
-                    );
-                    currentNode.Mesh = (uint)_gltf.Meshes.Count - 1;
+                    var newMesh = new glTFMesh {
+                        Primitives = _primQueue.ToList()
+                    };
+                    // check to see if there is a matching mesh
+                    var meshIdx = _gltf.Meshes.IndexOf(newMesh);
+                    if (meshIdx < 0) {
+                        // otherwise create a new mesh
+                        _gltf.Meshes.Add(newMesh);
+                        meshIdx = _gltf.Meshes.Count - 1;
+                    }
+
+                    // set the mesh on the active node
+                    currentNode.Mesh = (uint)meshIdx;
                 }
 
                 // and close the node
@@ -394,7 +410,7 @@ namespace GLTFRevitExport.GLTF {
             // ensure vertex and face data is available
             if (vertices is null || faces is null)
                 throw new Exception(StringLib.VertexFaceIsRequired);
-            
+
             if (PeekNode() is glTFNode) {
                 // process vertex data
                 var vertexBuffer = new BufferVectorSegment(vertices);
@@ -414,11 +430,11 @@ namespace GLTFRevitExport.GLTF {
                         nBuffIdx = _bufferSegments.Count - 1;
                     }
                 }
-                
+
                 // process face data
                 uint maxIndex = faces.Max();
                 BufferSegment faceBuffer;
-                if ( maxIndex <= 0xFF ) {
+                if (maxIndex <= 0xFF) {
                     var byteFaces = new List<byte>();
                     foreach (var face in faces)
                         byteFaces.Add(Convert.ToByte(face));

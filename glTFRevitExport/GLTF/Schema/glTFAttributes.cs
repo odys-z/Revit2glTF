@@ -24,5 +24,13 @@ namespace GLTFRevitExport.GLTF.Schema {
         /// </summary>
         [JsonProperty("NORMAL")]
         public uint? Normal { get; set; }
+
+        public override bool Equals(object obj) {
+            if (obj is glTFAttributes other)
+                return Position.Equals(other.Position) && Normal.Equals(other.Normal);
+            return false;
+        }
+
+        public override int GetHashCode() => base.GetHashCode();
     }
 }

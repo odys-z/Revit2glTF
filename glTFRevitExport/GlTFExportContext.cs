@@ -65,9 +65,10 @@ namespace GLTFRevitExport {
             public float Z { get; set; }
 
             public VectorData(XYZ vector) {
-                X = vector.X.ToGLTFLength();
-                Y = vector.Y.ToGLTFLength();
-                Z = vector.Z.ToGLTFLength();
+                var gltfVector = vector.ToGLTF();
+                X = gltfVector.X.ToGLTFLength();
+                Y = gltfVector.Y.ToGLTFLength();
+                Z = gltfVector.Z.ToGLTFLength();
             }
 
             public float[] ToArray() => new float[] { X, Y, Z };
@@ -189,7 +190,7 @@ namespace GLTFRevitExport {
     #endregion
 
     #region IExportContext Implementation
-    internal sealed partial class GLTFExportContext : IExportContext {
+    internal sealed partial class GLTFExportContext : IExportContext, IExportContextBase, IModelExportContext {
         #region Start, Stop, Cancel
         // Runs once at beginning of export. Sets up the root node
         // and scene.
@@ -523,14 +524,58 @@ namespace GLTFRevitExport {
 
         #region Misc
         public void OnRPC(RPCNode node) {
-            // TODO: on RPC
-            //Logger.Log("> rpc");
+            Logger.Log("> rpc");
         }
 
         public void OnLight(LightNode node) {
-            // TODO: on light
-            //Logger.Log("> light");
+            Logger.Log("> light");
         }
+
+        public RenderNodeAction OnCurve(CurveNode node) {
+            Logger.Log("> curve");
+            return RenderNodeAction.Skip;
+        }
+
+        public RenderNodeAction OnPolyline(PolylineNode node) {
+            Logger.Log("> polyline");
+            return RenderNodeAction.Skip;
+        }
+
+        public void OnLineSegment(LineSegment segment) {
+            Logger.Log("> line segment");
+        }
+
+        public void OnPolylineSegments(PolylineSegments segments) {
+            Logger.Log("> polyline segment");
+        }
+
+        public void OnText(TextNode node) {
+            Logger.Log("> text");
+        }
+
+        public RenderNodeAction OnPoint(PointNode node) {
+            Logger.Log("> point");
+            return RenderNodeAction.Skip;
+        }
+
+        //public RenderNodeAction OnElementBegin2D(ElementNode node) {
+        //    Logger.Log("+ element begin 2d");
+        //    return RenderNodeAction.Proceed;
+        //}
+
+        //public void OnElementEnd2D(ElementNode node) {
+        //    Logger.Log("- element end 2d");
+        //}
+
+        //public RenderNodeAction OnFaceEdge2D(FaceEdgeNode node) {
+        //    Logger.Log("> face edge 2d");
+        //    return RenderNodeAction.Proceed;
+        //}
+
+        //public RenderNodeAction OnFaceSilhouette2D(FaceSilhouetteNode node) {
+        //    Logger.Log("> face silhouette 2d");
+        //    return RenderNodeAction.Proceed;
+        //}
         #endregion
     }
     #endregion
@@ -600,11 +645,11 @@ namespace GLTFRevitExport {
                     },
                     extras: extrasBuilder(element)
                     );
-                // open a root node for the scene that transforms all
-                // its children to Y up
+
+                // open a root node for the scene
                 gltf.OpenNode(
                     name: string.Format(StringLib.SceneRootNodeName, element.Name),
-                    matrix: Transform.CreateRotation(new XYZ(1, 0, 0), -Math.PI / 2.0).ToGLTF(),
+                    matrix: Transform.CreateTranslation(new XYZ(0, 0, 0)).ToGLTF(),
                     extras: null,
                     exts: null
                     );

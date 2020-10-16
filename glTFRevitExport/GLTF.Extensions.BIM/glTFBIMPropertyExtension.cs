@@ -91,7 +91,7 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
                 string categoryName = et.Category != null ? et.Category.Name : et.ToString();
                 string familyName = et.FamilyName;
                 taxonomies.Add(
-                        $"{_revitPrefix}/{categoryName}/{familyName}".UriEncode()
+                        $"{_revitPrefix}/Categories/{categoryName}/{familyName}".UriEncode()
                     );
             }
             // instances show various containers that include them (horizontal)
@@ -114,7 +114,7 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
                 string designOptsName = e.DesignOption?.Name;
                 if (designOptsName != null)
                     taxonomies.Add(
-                        $"{_revitPrefix}/DesignOptions/{designOptsName}".UriEncode()
+                        $"{_revitPrefix}/Design Options/{designOptsName}".UriEncode()
                     );
 
                 // Worksets

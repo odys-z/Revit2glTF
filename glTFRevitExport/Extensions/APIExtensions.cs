@@ -12,7 +12,12 @@ using GLTFRevitExport.GLTF.Containers;
 
 namespace GLTFRevitExport.Extensions {
     internal static class APIExtensions {
-        static public string GetId(this Element e) => e?.UniqueId;
+        // Z-Up to Y-Up basis transform
+        public static Transform ZTOY =
+            Transform.CreateRotation(new XYZ(1, 0, 0), Math.PI / 2.0);
+
+
+        public static string GetId(this Element e) => e?.UniqueId;
 
         public static string GetId(this Color c)
             => (
@@ -41,17 +46,21 @@ namespace GLTFRevitExport.Extensions {
             };
         }
 
+        public static XYZ ToGLTF(this XYZ vector) => ZTOY.Inverse.OfPoint(vector);
+
         /// <summary>
         /// Convert Revit transform to floating-point 4x4 transformation
         /// matrix stored in column major order
         /// </summary>
-        static public float[] ToGLTF(this Transform xform) {
+        public static float[] ToGLTF(this Transform xform) {
             if (xform == null || xform.IsIdentity) return null;
 
-            var bx = xform.BasisX;
-            var by = xform.BasisY;
-            var bz = xform.BasisZ;
-            var or = xform.Origin;
+            var yupxform = ZTOY.Inverse.Multiply(xform).Multiply(ZTOY);
+
+            var bx = yupxform.BasisX;
+            var by = yupxform.BasisY;
+            var bz = yupxform.BasisZ;
+            var or = yupxform.Origin;
 
             return new float[16] {
                 bx.X.ToSingle(),         bx.Y.ToSingle(),         bx.Z.ToSingle(),         0f,
@@ -61,7 +70,7 @@ namespace GLTFRevitExport.Extensions {
             };
         }
 
-        static public double ToGLTF(this Parameter p, double value) {
+        public static double ToGLTF(this Parameter p, double value) {
             // TODO: read value unit and convert correctly
             switch (p.Definition.UnitType) {
                 case UnitType.UT_Length:
@@ -71,7 +80,7 @@ namespace GLTFRevitExport.Extensions {
             }
         }
 
-        static public object ToGLTF(this Parameter param) {
+        public static object ToGLTF(this Parameter param) {
             switch (param.StorageType) {
                 case StorageType.None: break;
 

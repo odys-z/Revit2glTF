@@ -15,5 +15,17 @@ namespace GLTFRevitExport.GLTF.Schema {
 
         [JsonProperty("primitives")]
         public List<glTFMeshPrimitive> Primitives { get; set; }
+
+        public override bool Equals(object obj) {
+            if (obj is glTFMesh other) {
+                foreach (var prim in Primitives)
+                    if (!other.Primitives.Contains(prim))
+                        return false;
+                return true;
+            }
+            return false;
+        }
+
+        public override int GetHashCode() => base.GetHashCode();
     }
 }
