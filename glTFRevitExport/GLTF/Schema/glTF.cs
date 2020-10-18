@@ -31,14 +31,14 @@ namespace GLTFRevitExport.GLTF.Schema {
         [JsonProperty("meshes")]
         public List<glTFMesh> Meshes { get; set; } = new List<glTFMesh>();
 
-        [JsonProperty("buffers")]
-        public List<glTFBuffer> Buffers { get; set; } = new List<glTFBuffer>();
+        [JsonProperty("accessors")]
+        public List<glTFAccessor> Accessors { get; set; } = new List<glTFAccessor>();
 
         [JsonProperty("bufferViews")]
         public List<glTFBufferView> BufferViews { get; set; } = new List<glTFBufferView>();
 
-        [JsonProperty("accessors")]
-        public List<glTFAccessor> Accessors { get; set; } = new List<glTFAccessor>();
+        [JsonProperty("buffers")]
+        public List<glTFBuffer> Buffers { get; set; } = new List<glTFBuffer>();
 
         [JsonProperty("materials")]
         public List<glTFMaterial> Materials { get; set; } = new List<glTFMaterial>();
