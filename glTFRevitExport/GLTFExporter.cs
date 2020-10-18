@@ -25,6 +25,7 @@ namespace GLTFRevitExport {
 #else
             // export View3D was deprecated in Revit 2020 and above
             exp.Export(view);
+            // TODO: handle cancel
 #endif
         }
 
