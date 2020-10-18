@@ -141,20 +141,18 @@ namespace GLTFRevitExport.GLTF {
 
             public override bool Equals(object obj) {
                 if (obj is BufferSegment<T> other)
-                    return GetHashCode() == other.GetHashCode();
+                    return ComputeHash() == other.ComputeHash();
                 return false;
             }
 
-            public override int GetHashCode() {
-                if (_hash is null)
-                    _hash = ComputeHash();
-                return _hash.GetHashCode();
-            }
+            public override int GetHashCode() => base.GetHashCode();
 
             private string ComputeHash() {
-                return Encoding.Default.GetString(
-                    SHA1.Create().ComputeHash(ToByteArray())
-                   );
+                if (_hash is null)
+                    _hash = Encoding.UTF8.GetString(
+                        SHA256.Create().ComputeHash(ToByteArray())
+                        );
+                return _hash;
             }
         }
 
