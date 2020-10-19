@@ -14,7 +14,7 @@ namespace GLTFRevitExport.Extensions {
     internal static class APIExtensions {
         // Z-Up to Y-Up basis transform
         public static Transform ZTOY =
-            Transform.CreateRotation(new XYZ(1, 0, 0), Math.PI / 2.0);
+            Transform.CreateRotation(new XYZ(1, 0, 0), -Math.PI / 2.0);
 
 
         public static string GetId(this Element e) => e?.UniqueId;
@@ -46,7 +46,7 @@ namespace GLTFRevitExport.Extensions {
             };
         }
 
-        public static XYZ ToGLTF(this XYZ vector) => ZTOY.Inverse.OfPoint(vector);
+        public static XYZ ToGLTF(this XYZ vector) => ZTOY.OfPoint(vector);
 
         /// <summary>
         /// Convert Revit transform to floating-point 4x4 transformation
@@ -55,7 +55,7 @@ namespace GLTFRevitExport.Extensions {
         public static float[] ToGLTF(this Transform xform) {
             if (xform == null || xform.IsIdentity) return null;
 
-            var yupxform = ZTOY.Inverse.Multiply(xform).Multiply(ZTOY);
+            var yupxform = ZTOY * xform * ZTOY.Inverse;
 
             var bx = yupxform.BasisX;
             var by = yupxform.BasisY;
@@ -103,6 +103,6 @@ namespace GLTFRevitExport.Extensions {
         }
         
         public static bool IsBIC(this Category c, BuiltInCategory bic)
-        => c.Id.IntegerValue == (int)bic;
+            => c.Id.IntegerValue == (int)bic;
     }
 }
