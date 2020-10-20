@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace GLTFRevitExport.GLTF.Schema {
     /// <summary>
@@ -29,7 +30,7 @@ namespace GLTFRevitExport.GLTF.Schema {
         /// the datatype of the components in the attribute
         /// </summary>
         [JsonProperty("componentType")]
-        public ComponentType ComponentType { get; set; }
+        public glTFAccessorComponentType ComponentType { get; set; }
 
         /// <summary>
         /// The number of attributes referenced by this accessor.
@@ -41,7 +42,8 @@ namespace GLTFRevitExport.GLTF.Schema {
         /// Specifies if the attribute is a scalar, vector, or matrix
         /// </summary>
         [JsonProperty("type")]
-        public string Type { get; set; }
+        [JsonConverter(typeof(StringEnumConverter))]
+        public glTFAccessorType Type { get; set; }
 
         /// <summary>
         /// Maximum value of each component in this attribute.

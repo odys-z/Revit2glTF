@@ -20,7 +20,7 @@ namespace GLTFRevitExport.GLTF.Schema {
         public uint Indices { get; set; }
 
         [JsonProperty("material")]
-        public uint Material { get; set; }
+        public uint? Material { get; set; } = null;
 
         [JsonProperty("mode")]
         public glTFMeshMode Mode { get; set; } = glTFMeshMode.TRIANGLES;

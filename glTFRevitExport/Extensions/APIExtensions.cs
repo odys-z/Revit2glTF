@@ -37,7 +37,7 @@ namespace GLTFRevitExport.Extensions {
         /// </summary>
         // https://github.com/va3c/RvtVa3c
         // Return an integer value for a Revit Color.
-        public static float[] ToGLTF(this Color color, float transparency) {
+        public static float[] ToGLTF(this Color color, float transparency = 0f) {
             return new float[] {
                 color.Red / 255f,
                 color.Green / 255f,
@@ -46,7 +46,10 @@ namespace GLTFRevitExport.Extensions {
             };
         }
 
-        public static XYZ ToGLTF(this XYZ vector) => ZTOY.OfPoint(vector);
+        public static float[] ToGLTF(this XYZ vector) {
+            var np = ZTOY.OfPoint(vector);
+            return new float[] { np.X.ToGLTFLength(), np.Y.ToGLTFLength(), np.Z.ToGLTFLength() };
+        }
 
         /// <summary>
         /// Convert Revit transform to floating-point 4x4 transformation
@@ -101,7 +104,7 @@ namespace GLTFRevitExport.Extensions {
             }
             return null;
         }
-        
+
         public static bool IsBIC(this Category c, BuiltInCategory bic)
             => c.Id.IntegerValue == (int)bic;
     }

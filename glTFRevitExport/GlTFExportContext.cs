@@ -14,6 +14,7 @@ using GLTFRevitExport.Properties;
 using System.Runtime.CompilerServices;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB.Visual;
+using Autodesk.Revit.DB.Architecture;
 
 namespace GLTFRevitExport {
     #region Initialization
@@ -66,9 +67,9 @@ namespace GLTFRevitExport {
 
             public VectorData(XYZ vector) {
                 var gltfVector = vector.ToGLTF();
-                X = gltfVector.X.ToGLTFLength();
-                Y = gltfVector.Y.ToGLTFLength();
-                Z = gltfVector.Z.ToGLTFLength();
+                X = gltfVector[0];
+                Y = gltfVector[1];
+                Z = gltfVector[2];
             }
 
             public float[] ToArray() => new float[] { X, Y, Z };
@@ -240,12 +241,24 @@ namespace GLTFRevitExport {
                     // if active doc and view is valid
                     _actions.Enqueue(new OnSceneBeginAction(view: view));
 
+                    // add an action to the queue that collects the elements
+                    // not collected by the IExporter
+                    QueueMeshGeometryActions(
+                        view,
+                        new ElementClassFilter(typeof(TopographySurface))
+                        );
+
                     Logger.LogElement("+ view begin", view);
                     return RenderNodeAction.Proceed;
                 }
             }
             // otherwise skip the view
             return RenderNodeAction.Skip;
+        }
+
+        private void QueueMeshGeometryActions(View view, ElementFilter filter) {
+            foreach(var e in new FilteredElementCollector(view.Document, view.Id).WherePasses(filter))
+                _actions.Enqueue(new OnMeshGeometryNodeAction(view: view, element: e));
         }
 
         public void OnViewEnd(ElementId elementId) {
@@ -586,7 +599,7 @@ namespace GLTFRevitExport {
             public bool IncludeHierarchy = true;
             public bool IncludeProperties = true;
 
-            public abstract void Execute(GLTFBuilder gltf);
+            public abstract void Execute(GLTFBuilder gltf, GLTFExportConfigs cfg);
         }
 
         abstract class BaseElementExporterAction : BaseExporterAction {
@@ -594,9 +607,10 @@ namespace GLTFRevitExport {
 
             public BaseElementExporterAction(Element e) => element = e;
 
-            public override void Execute(GLTFBuilder gltf)
+            public override void Execute(GLTFBuilder gltf, GLTFExportConfigs cfg)
                 => Execute(
                     gltf,
+                    cfg,
                     (e) => {
                         if (e is FamilyInstance famInst) {
                             var zones = new HashSet<string>();
@@ -614,6 +628,7 @@ namespace GLTFRevitExport {
                     (e) => new glTFExtras()
                     );
             public abstract void Execute(GLTFBuilder gltf,
+                                         GLTFExportConfigs cfg,
                                          Func<object, string[]> zoneFinder,
                                          Func<object, glTFExtras> extrasBuilder);
 
@@ -634,6 +649,7 @@ namespace GLTFRevitExport {
             public OnSceneBeginAction(View view) : base(view) { }
 
             public override void Execute(GLTFBuilder gltf,
+                                         GLTFExportConfigs cfg,
                                          Func<object, string[]> zoneFinder,
                                          Func<object, glTFExtras> extrasBuilder) {
                 // start a new gltf scene
@@ -657,12 +673,122 @@ namespace GLTFRevitExport {
         }
 
         class OnSceneEndAction : ExporterEndAction {
-            public override void Execute(GLTFBuilder gltf) {
+            public override void Execute(GLTFBuilder gltf, GLTFExportConfigs cfg) {
                 Logger.Log("- view end");
                 // close root node
                 gltf.CloseNode();
                 // close scene
                 gltf.CloseScene();
+            }
+        }
+
+        class OnMeshGeometryNodeAction : BaseElementExporterAction {
+            private View _view = null;
+            public OnMeshGeometryNodeAction(View view, Element element) : base(element) { _view = view;  }
+
+            public override void Execute(GLTFBuilder gltf,
+                                         GLTFExportConfigs cfg,
+                                         Func<object, string[]> zoneFinder,
+                                         Func<object, glTFExtras> extrasBuilder) {
+                // open a new node and store its id
+                Logger.Log("> custom element");
+
+                foreach(var geom in element.get_Geometry(new Options { View = _view })) {
+                    if(geom is Mesh mesh) {
+
+                        gltf.OpenNode(
+                            name: element.Name,
+                            matrix: null,
+                            exts: new glTFExtension[] {
+                                new glTFBIMNodeExtension(element, null, IncludeProperties)
+                            },
+                            extras: extrasBuilder(element)
+                            );
+
+                        var vertices = new List<float>();
+                        foreach (var vec in mesh.Vertices)
+                            vertices.AddRange(vec.ToGLTF());
+                        
+                        var faces = new List<uint>();
+                        for(int i = 0; i < mesh.NumTriangles; i++) {
+                            var t = mesh.get_Triangle(i);
+
+                            // if element is a topography change associated with
+                            // a building pad, the face normals need to be flipped for
+                            // the side walls, but not for the base faces
+                            if (element is TopographySurface tp
+                                    && tp.IsAssociatedWithBuildingPad) {
+                                // if the vertices are horizontal (their Z are almost identical)
+                                double zAvg = (t.get_Vertex(0).Z + t.get_Vertex(1).Z + t.get_Vertex(2).Z) / 3.0;
+                                if (zAvg.AlmostEquals(t.get_Vertex(0).Z)) {
+                                    // then add the faces
+                                    faces.Add(t.get_Index(0));
+                                    faces.Add(t.get_Index(1));
+                                    faces.Add(t.get_Index(2));
+                                }
+                                // otherwise flip their normal
+                                else {
+                                    faces.Add(t.get_Index(2));
+                                    faces.Add(t.get_Index(1));
+                                    faces.Add(t.get_Index(0));
+                                }
+                            }
+                            else {
+                                faces.Add(t.get_Index(0));
+                                faces.Add(t.get_Index(1));
+                                faces.Add(t.get_Index(2));
+                            }
+                        }
+
+                        var primIndex = gltf.AddPrimitive(
+                            vertices: vertices.ToArray(),
+                            normals: null,
+                            faces: faces.ToArray()
+                            );
+
+                        // if mesh has material
+                        if (mesh.MaterialElementId != ElementId.InvalidElementId) {
+                            Material material = element.Document.GetElement(mesh.MaterialElementId) as Material;
+                            var existingMaterialIndex =
+                                gltf.FindMaterial(
+                                    (mat) => {
+                                        if (mat.Extensions != null) {
+                                            foreach (var ext in mat.Extensions)
+                                                if (ext.Value is glTFBIMMaterialExtensions matExt)
+                                                    return matExt.Id == material.UniqueId;
+                                        }
+                                        return false;
+                                    }
+                                );
+
+                            // check if material already exists
+                            if (existingMaterialIndex >= 0) {
+                                gltf.UpdateMaterial(
+                                    primitiveIndex: primIndex,
+                                    materialIndex: (uint)existingMaterialIndex
+                                );
+                            }
+                            // otherwise make a new material and get its index
+                            else {
+                                gltf.AddMaterial(
+                                    primitiveIndex: primIndex,
+                                    name: material.Name,
+                                    color: material.Color.ToGLTF(),
+                                    exts: new glTFExtension[] {
+                            new glTFBIMMaterialExtensions(material, IncludeProperties)
+                                    },
+                                    extras: null
+                                );
+                            }
+                        }
+
+                        // TODO: otherwise grab the color from graphics styles?
+                        else if (mesh.GraphicsStyleId != ElementId.InvalidElementId) {
+                        }
+
+                        gltf.CloseNode();
+                    }
+                }
             }
         }
 
@@ -677,6 +803,7 @@ namespace GLTFRevitExport {
             }
 
             public override void Execute(GLTFBuilder gltf,
+                                         GLTFExportConfigs cfg,
                                          Func<object, string[]> zoneFinder,
                                          Func<object, glTFExtras> extrasBuilder) {
                 // open a new node and store its id
@@ -766,7 +893,7 @@ namespace GLTFRevitExport {
         }
 
         class OnNodeEndAction : ExporterEndAction {
-            public override void Execute(GLTFBuilder gltf) {
+            public override void Execute(GLTFBuilder gltf, GLTFExportConfigs cfg) {
                 Logger.Log("- element end");
                 // close instance node
                 gltf.CloseNode();
@@ -781,7 +908,7 @@ namespace GLTFRevitExport {
 
             public OnTransformAction(float[] xform) => _xform = xform;
 
-            public override void Execute(GLTFBuilder gltf) {
+            public override void Execute(GLTFBuilder gltf, GLTFExportConfigs cfg) {
                 if (gltf.GetActiveNode() is glTFNode activeNode) {
                     Logger.Log("> transform");
                     activeNode.Matrix = _xform;
@@ -792,26 +919,26 @@ namespace GLTFRevitExport {
         }
 
         class OnPartNodeAction : BaseExporterAction {
-            private readonly PartData _partp;
+            private readonly PartData _partData;
 
-            public OnPartNodeAction(PartData partp) => _partp = partp;
+            public OnPartNodeAction(PartData partData) => _partData = partData;
 
-            public override void Execute(GLTFBuilder gltf) {
+            public override void Execute(GLTFBuilder gltf, GLTFExportConfigs cfg) {
                 Logger.Log("> primitive");
 
                 // make a new mesh and assign the new material
                 var vertices = new List<float>();
-                foreach (var vec in _partp.Primitive.Vertices)
+                foreach (var vec in _partData.Primitive.Vertices)
                     vertices.AddRange(vec.ToArray());
 
                 var normals = new List<float>();
-                if (_partp.Primitive.Normals != null) {
-                    foreach (var vec in _partp.Primitive.Normals)
-                        normals.AddRange(vec.ToArray());
-                }
+                //if (_partData.Primitive.Normals != null) {
+                //    foreach (var vec in _partData.Primitive.Normals)
+                //        normals.AddRange(vec.ToArray());
+                //}
 
                 var faces = new List<uint>();
-                foreach (var facet in _partp.Primitive.Faces)
+                foreach (var facet in _partData.Primitive.Faces)
                     faces.AddRange(facet.ToArray());
 
                 var primIndex = gltf.AddPrimitive(
@@ -822,10 +949,14 @@ namespace GLTFRevitExport {
 
                 Logger.Log("> material");
 
+                // make sure color is valid, otherwise it will throw
+                // exception that color is not initialized
+                Color color = _partData.Color.IsValid ? _partData.Color : cfg.DefaultColor;
+
                 // if material information is not provided, make a material
                 // based on color and transparency
-                if (_partp.Material is null) {
-                    string matName = _partp.Color.GetId();
+                if (_partData.Material is null) {
+                    string matName = color.GetId();
                     var existingMaterialIndex =
                         gltf.FindMaterial((mat) => mat.Name == matName);
 
@@ -841,7 +972,7 @@ namespace GLTFRevitExport {
                         gltf.AddMaterial(
                             primitiveIndex: primIndex,
                             name: matName,
-                            color: _partp.Color.ToGLTF(_partp.Transparency.ToSingle()),
+                            color: color.ToGLTF(_partData.Transparency.ToSingle()),
                             exts: null,
                             extras: null
                         );
@@ -855,7 +986,7 @@ namespace GLTFRevitExport {
                                 if (mat.Extensions != null) {
                                     foreach (var ext in mat.Extensions)
                                         if (ext.Value is glTFBIMMaterialExtensions matExt)
-                                            return matExt.Id == _partp.Material.UniqueId;
+                                            return matExt.Id == _partData.Material.UniqueId;
                                 }
                                 return false;
                             }
@@ -872,10 +1003,10 @@ namespace GLTFRevitExport {
                     else {
                         gltf.AddMaterial(
                             primitiveIndex: primIndex,
-                            name: _partp.Material.Name,
-                            color: _partp.Color.ToGLTF(_partp.Transparency.ToSingle()),
+                            name: _partData.Material.Name,
+                            color: _partData.Material.Color.ToGLTF(_partData.Material.Transparency / 128f),
                             exts: new glTFExtension[] {
-                            new glTFBIMMaterialExtensions(_partp.Material, IncludeProperties)
+                            new glTFBIMMaterialExtensions(_partData.Material, IncludeProperties)
                             },
                             extras: null
                         );
@@ -967,16 +1098,16 @@ namespace GLTFRevitExport {
                     case ExporterBeginAction beg:
                         if (actionFilter is null) {
                             if (extrasBuilder != null)
-                                beg.Execute(glTF, zoneFinder, extrasBuilder);
+                                beg.Execute(glTF, _cfgs, zoneFinder, extrasBuilder);
                             else
-                                beg.Execute(glTF);
+                                beg.Execute(glTF, _cfgs);
                             passResults.Push(true);
                         }
                         else if (beg.Passes(actionFilter)) {
                             if (extrasBuilder != null)
-                                beg.Execute(glTF, zoneFinder, extrasBuilder);
+                                beg.Execute(glTF, _cfgs, zoneFinder, extrasBuilder);
                             else
-                                beg.Execute(glTF);
+                                beg.Execute(glTF, _cfgs);
                             passResults.Push(true);
                         }
                         else
@@ -985,11 +1116,11 @@ namespace GLTFRevitExport {
 
                     case ExporterEndAction end:
                         if (passResults.Pop())
-                            end.Execute(glTF);
+                            end.Execute(glTF, _cfgs);
                         break;
 
                     case BaseExporterAction ea:
-                        ea.Execute(glTF);
+                        ea.Execute(glTF, _cfgs);
                         break;
                 }
             }

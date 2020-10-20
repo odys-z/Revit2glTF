@@ -38,5 +38,7 @@ namespace GLTFRevitExport {
         /// Cancellation toke for cancelling the export progress
         /// </summary>
         public CancellationToken CancelToken;
+
+        public Color DefaultColor = new Color(0, 0, 0);
     }
 }

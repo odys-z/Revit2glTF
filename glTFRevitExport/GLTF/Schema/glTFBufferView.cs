@@ -35,6 +35,6 @@ namespace GLTFRevitExport.GLTF.Schema {
         /// The target that the GPU buffer should be bound to.
         /// </summary>
         [JsonProperty("target")]
-        public Targets Target { get; set; }
+        public glTFBufferViewTargets Target { get; set; }
     }
 }

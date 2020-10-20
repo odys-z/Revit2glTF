@@ -33,12 +33,12 @@ namespace GLTFRevitExport.GLTF {
                     uint dataSize = 0;
                     // calculate necessary padding
                     switch (seg.DataType) {
-                        case ComponentType.SHORT:
-                        case ComponentType.UNSIGNED_SHORT:
+                        case glTFAccessorComponentType.SHORT:
+                        case glTFAccessorComponentType.UNSIGNED_SHORT:
                             dataSize = 2;
                             break;
-                        case ComponentType.UNSIGNED_INT:
-                        case ComponentType.FLOAT:
+                        case glTFAccessorComponentType.UNSIGNED_INT:
+                        case glTFAccessorComponentType.FLOAT:
                             dataSize = 4;
                             break;
                     }
@@ -106,9 +106,9 @@ namespace GLTFRevitExport.GLTF {
         private readonly glTF _gltf = null;
 
         abstract class BufferSegment {
-            public abstract string Type { get; }
-            public abstract ComponentType DataType { get; }
-            public abstract Targets Target { get; }
+            public abstract glTFAccessorType Type { get; }
+            public abstract glTFAccessorComponentType DataType { get; }
+            public abstract glTFBufferViewTargets Target { get; }
             public abstract uint Count { get; }
             public abstract byte[] ToByteArray();
 
@@ -157,9 +157,9 @@ namespace GLTFRevitExport.GLTF {
         }
 
         class BufferVectorSegment : BufferSegment<float> {
-            public override string Type => "VEC3";
-            public override ComponentType DataType => ComponentType.FLOAT;
-            public override Targets Target => Targets.ARRAY_BUFFER;
+            public override glTFAccessorType Type => glTFAccessorType.VEC3;
+            public override glTFAccessorComponentType DataType => glTFAccessorComponentType.FLOAT;
+            public override glTFBufferViewTargets Target => glTFBufferViewTargets.ARRAY_BUFFER;
 
             public BufferVectorSegment(float[] vectors) {
                 if (vectors.Length % 3 != 0)
@@ -194,9 +194,9 @@ namespace GLTFRevitExport.GLTF {
         }
 
         class BufferScalar1Segment : BufferSegment<byte> {
-            public override string Type => "SCALAR";
-            public override ComponentType DataType => ComponentType.UNSIGNED_BYTE;
-            public override Targets Target => Targets.ELEMENT_ARRAY_BUFFER;
+            public override glTFAccessorType Type => glTFAccessorType.SCALAR;
+            public override glTFAccessorComponentType DataType => glTFAccessorComponentType.UNSIGNED_BYTE;
+            public override glTFBufferViewTargets Target => glTFBufferViewTargets.ELEMENT_ARRAY_BUFFER;
 
             public BufferScalar1Segment(byte[] scalars) {
                 Data = scalars;
@@ -208,9 +208,9 @@ namespace GLTFRevitExport.GLTF {
         }
 
         class BufferScalar2Segment : BufferSegment<ushort> {
-            public override string Type => "SCALAR";
-            public override ComponentType DataType => ComponentType.UNSIGNED_SHORT;
-            public override Targets Target => Targets.ELEMENT_ARRAY_BUFFER;
+            public override glTFAccessorType Type => glTFAccessorType.SCALAR;
+            public override glTFAccessorComponentType DataType => glTFAccessorComponentType.UNSIGNED_SHORT;
+            public override glTFBufferViewTargets Target => glTFBufferViewTargets.ELEMENT_ARRAY_BUFFER;
 
             public BufferScalar2Segment(ushort[] scalars) {
                 Data = scalars;
@@ -227,9 +227,9 @@ namespace GLTFRevitExport.GLTF {
         }
 
         class BufferScalar4Segment : BufferSegment<uint> {
-            public override string Type => "SCALAR";
-            public override ComponentType DataType => ComponentType.UNSIGNED_INT;
-            public override Targets Target => Targets.ELEMENT_ARRAY_BUFFER;
+            public override glTFAccessorType Type => glTFAccessorType.SCALAR;
+            public override glTFAccessorComponentType DataType => glTFAccessorComponentType.UNSIGNED_INT;
+            public override glTFBufferViewTargets Target => glTFBufferViewTargets.ELEMENT_ARRAY_BUFFER;
 
             public BufferScalar4Segment(uint[] scalars) {
                 Data = scalars;
@@ -432,13 +432,13 @@ namespace GLTFRevitExport.GLTF {
                 // process face data
                 uint maxIndex = faces.Max();
                 BufferSegment faceBuffer;
-                if (maxIndex <= 0xFF) {
+                if (maxIndex < 0xFF) {
                     var byteFaces = new List<byte>();
                     foreach (var face in faces)
                         byteFaces.Add(Convert.ToByte(face));
                     faceBuffer = new BufferScalar1Segment(byteFaces.ToArray());
                 }
-                else if (maxIndex <= 0xFFFF) {
+                else if (maxIndex < 0xFFFF) {
                     var shortFaces = new List<ushort>();
                     foreach (var face in faces)
                         shortFaces.Add(Convert.ToUInt16(face));
@@ -490,9 +490,11 @@ namespace GLTFRevitExport.GLTF {
                         Extras = extras
                     };
 
+                    if (_gltf.Materials is null)
+                        _gltf.Materials = new List<glTFMaterial>();
                     _gltf.Materials.Add(material);
                     prim.Material = (uint)_gltf.Materials.Count - 1;
-                    return prim.Material;
+                    return prim.Material.Value;
                 }
                 else
                     throw new Exception(StringLib.NoParentPrimitive);
@@ -502,9 +504,11 @@ namespace GLTFRevitExport.GLTF {
         }
 
         public int FindMaterial(Func<glTFMaterial, bool> filter) {
-            foreach (var material in _gltf.Materials)
-                if (filter(material))
-                    return (int)_gltf.Materials.IndexOf(material);
+            if (_gltf.Materials != null && _gltf.Materials.Count > 0) {
+                foreach (var material in _gltf.Materials)
+                    if (filter(material))
+                        return (int)_gltf.Materials.IndexOf(material);
+            }
             return -1;
         }
 

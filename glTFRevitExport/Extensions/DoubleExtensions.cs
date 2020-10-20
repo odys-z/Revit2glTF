@@ -29,5 +29,25 @@ namespace GLTFRevitExport.Extensions {
                 return 0f;
             return _feet_to_m * f;
         }
+
+        // https://stackoverflow.com/a/3875619/2350244
+        public static bool AlmostEquals(this double a, double b, double epsilon = _eps) {
+            const double MinNormal = 2.2250738585072014E-308d;
+            double absA = Math.Abs(a);
+            double absB = Math.Abs(b);
+            double diff = Math.Abs(a - b);
+
+            if (a.Equals(b)) { // shortcut, handles infinities
+                return true;
+            }
+            else if (a == 0 || b == 0 || absA + absB < MinNormal) {
+                // a or b is zero or both are extremely close to it
+                // relative error is less meaningful here
+                return diff < (epsilon * MinNormal);
+            }
+            else { // use relative error
+                return diff / (absA + absB) < epsilon;
+            }
+        }
     }
 }

@@ -41,6 +41,6 @@ namespace GLTFRevitExport.GLTF.Schema {
         public List<glTFBuffer> Buffers { get; set; } = new List<glTFBuffer>();
 
         [JsonProperty("materials")]
-        public List<glTFMaterial> Materials { get; set; } = new List<glTFMaterial>();
+        public List<glTFMaterial> Materials { get; set; } = null;
     }
 }
