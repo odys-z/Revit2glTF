@@ -150,7 +150,7 @@
     <Compile Include="GLTFBuildConfigs.cs" />
     <Compile Include="GLTFContainer.cs" />
     <Compile Include="Extensions\APIExtensions.cs" />
-    <Compile Include="Extensions\DoubleExtensions.cs" />
+    <Compile Include="Extensions\NumberExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="GLTFExportConfigs.cs" />
     <Compile Include="GLTFExporter.cs" />

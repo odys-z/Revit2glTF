@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace GLTFRevitExport.Extensions {
-    internal static class DoubleExtensions {
+    internal static class NumberExtensions {
         /// <summary>
         /// Consider a Revit length zero 
         /// if is smaller than this.
@@ -16,6 +16,9 @@ namespace GLTFRevitExport.Extensions {
         /// Conversion factor from feet to meter.
         /// </summary>
         const float _feet_to_m = 0.3048f;
+
+        // 1/10 of a mm
+        const short _resolution = 4;
 
         public static float ToSingle(this double d)
             => Convert.ToSingle(d);
@@ -28,6 +31,10 @@ namespace GLTFRevitExport.Extensions {
             if (Math.Abs(f) <= _eps)
                 return 0f;
             return _feet_to_m * f;
+        }
+
+        public static float Round(this float number) {
+            return Math.Round(Convert.ToDouble(number), _resolution).ToSingle();
         }
 
         // https://stackoverflow.com/a/3875619/2350244

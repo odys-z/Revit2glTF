@@ -65,6 +65,12 @@ namespace GLTFRevitExport {
             public float Y { get; set; }
             public float Z { get; set; }
 
+            public VectorData(float x, float y, float z) {
+                X = x;
+                Y = y;
+                Z = z;
+            }
+
             public VectorData(XYZ vector) {
                 var gltfVector = vector.ToGLTF();
                 X = gltfVector[0];
@@ -72,7 +78,7 @@ namespace GLTFRevitExport {
                 Z = gltfVector[2];
             }
 
-            public float[] ToArray() => new float[] { X, Y, Z };
+            public float[] ToArray() => new float[] { X.Round(), Y.Round(), Z.Round() };
 
             public int CompareTo(VectorData a) {
                 float d = X - a.X;
@@ -83,6 +89,20 @@ namespace GLTFRevitExport {
                     }
                 }
                 return (0 == d) ? 0 : ((0 < d) ? 1 : -1);
+            }
+
+            public XYZ ToXYZ() => new XYZ(X, Y, Z);
+            
+            public static VectorData operator +(VectorData left, VectorData right) {
+                return new VectorData(left.X + right.X, left.Y + right.Y, left.Z + right.Z);
+            }
+
+            public static VectorData operator -(VectorData left, VectorData right) {
+                return new VectorData(left.X - right.X, left.Y - right.Y, left.Z - right.Z);
+            }
+
+            public static VectorData operator /(VectorData left, float divisor) {
+                return new VectorData(left.X / divisor, left.Y / divisor, left.Z / divisor);
             }
         }
 
@@ -187,6 +207,38 @@ namespace GLTFRevitExport {
         }
 
         private readonly Stack<PartData> _partStack = new Stack<PartData>();
+
+        private float[] LocalizePartStack() {
+            List<float> vx = new List<float>();
+            List<float> vy = new List<float>();
+            List<float> vz = new List<float>();
+
+            foreach (var partData in _partStack)
+                foreach (var vtx in partData.Primitive.Vertices) {
+                    vx.Add(vtx.X);
+                    vy.Add(vtx.Y);
+                    vz.Add(vtx.Z);
+                }
+
+            var min = new VectorData(vx.Min(), vy.Min(), vz.Min());
+            var max = new VectorData(vx.Max(), vy.Max(), vz.Max());
+            var anchor = min + ((max - min) / 2f);
+            var translate = new VectorData(0, 0, 0) - anchor;
+
+            foreach (var partData in _partStack)
+                foreach (var vtx in partData.Primitive.Vertices) {
+                    vtx.X += translate.X;
+                    vtx.Y += translate.Y;
+                    vtx.Z += translate.Z;
+                }
+
+            return new float[16] {
+                1f,             0f,             0f,             0f,
+                0f,             1f,             0f,             0f,
+                0f,             0f,             1f,             0f,
+                -translate.X,   -translate.Y,   -translate.Z,    1f
+            };
+        }
     }
     #endregion
 
@@ -373,9 +425,24 @@ namespace GLTFRevitExport {
                 _skipElement = false;
             else {
                 // if has mesh data
-                if (_partStack.Count > 0)
-                    foreach (var primitive in _partStack)
-                        _actions.Enqueue(new OnPartNodeAction(primitive));
+                if (_partStack.Count > 0) {
+                    bool alreadyLocalized = false;
+                    if (_actions.Last() is OnTransformAction)
+                        alreadyLocalized = true;
+
+
+                    float[] xform = null;
+                    if (!alreadyLocalized) {
+                        Logger.Log("> localized transform");
+                        xform = LocalizePartStack();
+                    }
+                    
+                    foreach (var partData in _partStack)
+                        _actions.Enqueue(new OnPartNodeAction(partData));
+
+                    if (xform != null)
+                        _actions.Enqueue(new OnTransformAction(xform));
+                }
                 _partStack.Clear();
 
                 Logger.Log("- element end");
