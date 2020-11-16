@@ -9,10 +9,8 @@ using GLTFRevitExport.Extensions;
 
 namespace GLTFRevitExport.GLTF.Extensions.BIM {
     [Serializable]
-#pragma warning disable IDE1006 // Naming Styles
-    internal class glTFBIMAssetExtension : glTFBIMExtension {
-#pragma warning restore IDE1006 // Naming Styles
-        internal glTFBIMAssetExtension(Document d, bool includeParameters = true, glTFBIMPropertyContainer propContainer = null) : base() {
+    internal class GLTFBIMAssetExtension : GLTFBIMExtension {
+        internal GLTFBIMAssetExtension(Document d, bool includeParameters = true, GLTFBIMPropertyContainer propContainer = null) : base() {
             App = GetAppName(d);
             Id = GetDocumentId(d).ToString();
             Title = d.Title;
@@ -26,7 +24,7 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
                     propContainer.Record(Id, GetProjectInfo(d));
                     // ensure property sources list is initialized
                     if (Containers is null)
-                        Containers = new List<glTFBIMPropertyContainer>();
+                        Containers = new List<GLTFBIMPropertyContainer>();
                     // add the new property source
                     if (!Containers.Contains(propContainer))
                         Containers.Add(propContainer);
@@ -94,8 +92,17 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
         [JsonProperty("source")]
         public string Source { get; set; }
 
+        [JsonProperty("levels")]
+        public List<uint> Levels { get; set; }
+
+        [JsonProperty("grids")]
+        public List<uint> Grids { get; set; }
+
+        [JsonProperty("zones")]
+        public List<uint> Zones { get; set; }
+
         [JsonProperty("containers")]
-        public List<glTFBIMPropertyContainer> Containers { get; set; }
+        public List<GLTFBIMPropertyContainer> Containers { get; set; }
 
         [JsonProperty("properties")]
         public Dictionary<string, object> Properties { get; set; }

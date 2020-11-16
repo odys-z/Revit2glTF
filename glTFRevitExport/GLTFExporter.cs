@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Autodesk.Revit.DB;
-using GLTFRevitExport.GLTF.Containers;
+
+using GLTFRevitExport.GLTF;
 using GLTFRevitExport.GLTF.Schema;
 
 namespace GLTFRevitExport {
@@ -29,10 +31,10 @@ namespace GLTFRevitExport {
 #endif
         }
 
-        public GLTFContainer BuildGLTF(ElementFilter filter = null,
-                                       Func<object, string[]> zoneFinder = null,
-                                       Func<object, glTFExtras> extrasBuilder = null,
-                                       GLTFBuildConfigs configs = null)
+        public List<GLTFPackageItem> BuildGLTF(ElementFilter filter = null,
+                                              Func<object, string[]> zoneFinder = null,
+                                              Func<object, glTFExtras> extrasBuilder = null,
+                                              GLTFBuildConfigs configs = null)
         {
             // ensure configs
             configs = configs ?? new GLTFBuildConfigs();
@@ -44,11 +46,13 @@ namespace GLTFRevitExport {
                 singleBinary: configs.UseSingleBinary
             );
 
-            return new GLTFContainer {
-                Model = gltfPack.Item1,
-                Properties = _ctx.Properties,
-                Binaries = gltfPack.Item2
-            };
+            if (_ctx.Properties is string propData) {
+                gltfPack.Add(
+                    new GLTFPackageJsonItem("properties.json", propData)
+                    );
+            }
+
+            return gltfPack;
         }
     }
 }

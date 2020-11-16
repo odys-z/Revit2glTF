@@ -16,12 +16,12 @@ using System.Runtime.Serialization;
 
 namespace GLTFRevitExport.GLTF.Extensions.BIM {
 #pragma warning disable IDE1006 // Naming Styles
-    internal class glTFBIMNodeExtension : glTFBIMPropertyExtension {
+    internal class GLTFBIMNodeExtension : GLTFBIMPropertyExtension {
 #pragma warning restore IDE1006 // Naming Styles
-        internal glTFBIMNodeExtension(Element e,
+        internal GLTFBIMNodeExtension(Element e,
                                       Func<object, string[]> zoneFinder,
                                       bool includeParameters,
-                                      glTFBIMPropertyContainer propContainer)
+                                      GLTFBIMPropertyContainer propContainer)
             : base(e, includeParameters, propContainer)
         {
             // set level
@@ -39,32 +39,32 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
         public HashSet<string> Zones { get; set; }
 
         [JsonProperty("bounds", Order = 23)]
-        public glTFBIMBounds Bounds { get; set; }
+        public GLTFBIMBounds Bounds { get; set; }
     }
 
     [Serializable]
 #pragma warning disable IDE1006 // Naming Styles
-    internal class glTFBIMBounds : ISerializable {
+    internal class GLTFBIMBounds : ISerializable {
 #pragma warning restore IDE1006 // Naming Styles
-        internal glTFBIMBounds(BoundingBoxXYZ bbox) {
-            Min = new glTFBIMVector(bbox.Min);
-            Max = new glTFBIMVector(bbox.Max);
+        internal GLTFBIMBounds(BoundingBoxXYZ bbox) {
+            Min = new GLTFBIMVector(bbox.Min);
+            Max = new GLTFBIMVector(bbox.Max);
         }
 
-        public glTFBIMBounds(SerializationInfo info, StreamingContext context) {
+        public GLTFBIMBounds(SerializationInfo info, StreamingContext context) {
             var min = (float[])info.GetValue("min", typeof(float[]));
-            Min = new glTFBIMVector(min[0], min[1], min[2]);
+            Min = new GLTFBIMVector(min[0], min[1], min[2]);
             var max = (float[])info.GetValue("max", typeof(float[]));
-            Max = new glTFBIMVector(max[0], max[1], max[2]);
+            Max = new GLTFBIMVector(max[0], max[1], max[2]);
         }
 
         [JsonProperty("min")]
-        public glTFBIMVector Min { get; set; }
+        public GLTFBIMVector Min { get; set; }
 
         [JsonProperty("max")]
-        public glTFBIMVector Max { get; set; }
+        public GLTFBIMVector Max { get; set; }
 
-        public void Union(glTFBIMBounds other) {
+        public void Union(GLTFBIMBounds other) {
             Min.ContractTo(other.Min);
             Max.ExpandTo(other.Max);
         }
@@ -78,29 +78,29 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
     // TODO: serialize into 3 double values
     [Serializable]
 #pragma warning disable IDE1006 // Naming Styles
-    internal class glTFBIMVector {
+    internal class GLTFBIMVector {
 #pragma warning restore IDE1006 // Naming Styles
         public float X { get; set; }
         public float Y { get; set; }
         public float Z { get; set; }
 
-        public glTFBIMVector(XYZ pt) {
+        public GLTFBIMVector(XYZ pt) {
             X = pt.X.ToSingle();
             Y = pt.Y.ToSingle();
             Z = pt.Z.ToSingle();
         }
 
-        public glTFBIMVector(float x, float y, float z) {
+        public GLTFBIMVector(float x, float y, float z) {
             X = x; Y = y; Z = z;
         }
 
-        public void ContractTo(glTFBIMVector other) {
+        public void ContractTo(GLTFBIMVector other) {
             X = other.X < X ? other.X : X;
             Y = other.Y < Y ? other.Y : Y;
             Z = other.Z < Z ? other.Z : Z;
         }
 
-        public void ExpandTo(glTFBIMVector other) {
+        public void ExpandTo(GLTFBIMVector other) {
             X = other.X > X ? other.X : X;
             Y = other.Y > Y ? other.Y : Y;
             Z = other.Z > Z ? other.Z : Z;

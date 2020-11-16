@@ -11,12 +11,12 @@ using GLTFRevitExport.Extensions;
 namespace GLTFRevitExport.GLTF.Extensions.BIM {
     [Serializable]
 #pragma warning disable IDE1006 // Naming Styles
-    internal class glTFBIMPropertyContainer : glTFBIMContainer {
+    internal class GLTFBIMPropertyContainer : GLTFBIMContainer {
 #pragma warning restore IDE1006 // Naming Styles
         private string _uri;
-        private glTFBIMPropertyData _propData = new glTFBIMPropertyData();
+        private GLTFBIMPropertyData _propData = new GLTFBIMPropertyData();
 
-        internal glTFBIMPropertyContainer(string uri) {
+        internal GLTFBIMPropertyContainer(string uri) {
             _uri = uri;
         }
 
@@ -41,13 +41,13 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
 
     [Serializable]
 #pragma warning disable IDE1006 // Naming Styles
-    internal class glTFBIMPropertyData {
+    internal class GLTFBIMPropertyData {
 #pragma warning restore IDE1006 // Naming Styles
         [JsonProperty("records", Order = 1)]
         public Dictionary<string, HashSet<uint>> Records { get; set; } = new Dictionary<string, HashSet<uint>>();
 
         [JsonProperty("groups", Order = 2)]
-        public List<glTFBIMPropertyDataGroup> Groups { get; set; } = new List<glTFBIMPropertyDataGroup>();
+        public List<GLTFBIMPropertyDataGroup> Groups { get; set; } = new List<GLTFBIMPropertyDataGroup>();
 
         [JsonProperty("keys", Order = 3)]
         public List<string> Keys { get; set; } = new List<string>();
@@ -57,7 +57,7 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
 
         public void Record(string id, Dictionary<string, object> props) {
             // add properties and group
-            var grp = new glTFBIMPropertyDataGroup();
+            var grp = new GLTFBIMPropertyDataGroup();
                 
             foreach (var propData in props) {
                 if (propData.Value is null)
@@ -100,7 +100,7 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
     }
 
     [Serializable]
-    internal class glTFBIMPropertyDataGroup {
+    internal class GLTFBIMPropertyDataGroup {
         [JsonProperty("keys", Order = 1)]
         public List<uint> Keys { get; set; } = new List<uint>();
 
@@ -108,7 +108,7 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
         public List<uint> Values { get; set; } = new List<uint>();
 
         public override bool Equals(object obj) {
-            if (obj is glTFBIMPropertyDataGroup other)
+            if (obj is GLTFBIMPropertyDataGroup other)
                 return Keys.Equals(other.Keys) && Values.Equals(other.Values);
             return false;
         }

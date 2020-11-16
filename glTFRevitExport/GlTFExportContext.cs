@@ -7,7 +7,6 @@ using Autodesk.Revit.DB;
 
 using GLTFRevitExport.GLTF;
 using GLTFRevitExport.Extensions;
-using GLTFRevitExport.GLTF.Containers;
 using GLTFRevitExport.GLTF.Schema;
 using GLTFRevitExport.GLTF.Extensions.BIM;
 using GLTFRevitExport.Properties;
@@ -41,7 +40,7 @@ namespace GLTFRevitExport {
         /// <summary>
         /// Property value container when property information is not embedded
         /// </summary>
-        private glTFBIMPropertyContainer _propContainer;
+        private GLTFBIMPropertyContainer _propContainer;
 
         /// <summary>
         /// Document stack to hold the documents being processed.
@@ -668,9 +667,10 @@ namespace GLTFRevitExport {
     #region Exporter Actions
     internal sealed partial class GLTFExportContext : IExportContext {
         abstract class BaseExporterAction {
+            public GLTFBIMAssetExtension AssetExt;
             public bool IncludeHierarchy = true;
             public bool IncludeProperties = true;
-            public glTFBIMPropertyContainer PropertyContainer = null;
+            public GLTFBIMPropertyContainer PropertyContainer = null;
 
             public abstract void Execute(GLTFBuilder gltf, GLTFExportConfigs cfg);
         }
@@ -730,7 +730,7 @@ namespace GLTFRevitExport {
                 gltf.OpenScene(
                     name: element.Name,
                     exts: new glTFExtension[] {
-                        new glTFBIMNodeExtension(element, zoneFinder, IncludeProperties, PropertyContainer)
+                        new GLTFBIMNodeExtension(element, zoneFinder, IncludeProperties, PropertyContainer)
                     },
                     extras: extrasBuilder(element)
                     );
@@ -773,7 +773,7 @@ namespace GLTFRevitExport {
                             name: element.Name,
                             matrix: null,
                             exts: new glTFExtension[] {
-                                new glTFBIMNodeExtension(element, null, IncludeProperties, PropertyContainer)
+                                new GLTFBIMNodeExtension(element, null, IncludeProperties, PropertyContainer)
                             },
                             extras: extrasBuilder(element)
                             );
@@ -827,7 +827,7 @@ namespace GLTFRevitExport {
                                     (mat) => {
                                         if (mat.Extensions != null) {
                                             foreach (var ext in mat.Extensions)
-                                                if (ext.Value is glTFBIMMaterialExtensions matExt)
+                                                if (ext.Value is GLTFBIMMaterialExtensions matExt)
                                                     return matExt.Id == material.UniqueId;
                                         }
                                         return false;
@@ -848,7 +848,7 @@ namespace GLTFRevitExport {
                                     name: material.Name,
                                     color: material.Color.ToGLTF(),
                                     exts: new glTFExtension[] {
-                            new glTFBIMMaterialExtensions(material, IncludeProperties, PropertyContainer)
+                            new GLTFBIMMaterialExtensions(material, IncludeProperties, PropertyContainer)
                                     },
                                     extras: null
                                 );
@@ -887,10 +887,49 @@ namespace GLTFRevitExport {
                 bool nodeFilter(glTFNode node) {
                     if (node.Extensions != null) {
                         foreach (var ext in node.Extensions)
-                            if (ext.Value is glTFBIMNodeExtension nodeExt)
+                            if (ext.Value is GLTFBIMNodeExtension nodeExt)
                                 return nodeExt.Id == targetId;
                     }
                     return false;
+                }
+
+                // process special cases
+                switch (element) {
+                    case Level level:
+                        // make a matrix from level elevation
+                        float elev = level.Elevation.ToGLTFLength();
+                        float[] elevMatrix = null;
+                        if (elev > 0f) {
+                            elevMatrix = new float[16] {
+                                1f,   0f,   0f,   0f,
+                                0f,   1f,   0f,   0f,
+                                0f,   0f,   1f,   0f,
+                                0f,   elev, 0f,   1f
+                            };
+                        }
+
+                        // create level node
+                        var levelNodeIdx = gltf.OpenNode(
+                            name: level.Name,
+                            matrix: elevMatrix,
+                            exts: new glTFExtension[] {
+                            new GLTFBIMNodeExtension(level, null, IncludeProperties, PropertyContainer)
+                            },
+                            extras: extrasBuilder(level)
+                        );
+                        
+                        // record the level in asset
+                        if (AssetExt != null) {
+                            if (AssetExt.Levels is null)
+                                AssetExt.Levels = new List<uint>();
+                            AssetExt.Levels.Add(levelNodeIdx);
+                        }
+                        
+                        // not need to do anything else
+                        return;
+
+                    default:
+                        break;
                 }
 
                 // create a node for its type
@@ -909,7 +948,7 @@ namespace GLTFRevitExport {
                             name: _elementType.Name,
                             matrix: null,
                             exts: new glTFExtension[] {
-                                new glTFBIMNodeExtension(_elementType, null, IncludeProperties, PropertyContainer)
+                                new GLTFBIMNodeExtension(_elementType, null, IncludeProperties, PropertyContainer)
                             },
                             extras: extrasBuilder(_elementType)
                         );
@@ -931,7 +970,7 @@ namespace GLTFRevitExport {
                         name: element.Name,
                         matrix: null,
                         exts: new glTFExtension[] {
-                            new glTFBIMNodeExtension(element, zoneFinder, IncludeProperties, PropertyContainer)
+                            new GLTFBIMNodeExtension(element, zoneFinder, IncludeProperties, PropertyContainer)
                         },
                         extras: extrasBuilder(element)
                     );
@@ -941,16 +980,16 @@ namespace GLTFRevitExport {
                         UpdateBounds(
                             gltf: gltf,
                             idx: newNodeIdx,
-                            bounds: new glTFBIMBounds(bbox)
+                            bounds: new GLTFBIMBounds(bbox)
                         );
                 }
             }
 
-            private void UpdateBounds(GLTFBuilder gltf, uint idx, glTFBIMBounds bounds) {
+            private void UpdateBounds(GLTFBuilder gltf, uint idx, GLTFBIMBounds bounds) {
                 glTFNode node = gltf.GetNode(idx);
                 if (node.Extensions != null) {
                     foreach (var ext in node.Extensions) {
-                        if (ext.Value is glTFBIMNodeExtension nodeExt) {
+                        if (ext.Value is GLTFBIMNodeExtension nodeExt) {
                             if (nodeExt.Bounds != null)
                                 nodeExt.Bounds.Union(bounds);
                             else
@@ -1058,7 +1097,7 @@ namespace GLTFRevitExport {
                             (mat) => {
                                 if (mat.Extensions != null) {
                                     foreach (var ext in mat.Extensions)
-                                        if (ext.Value is glTFBIMMaterialExtensions matExt)
+                                        if (ext.Value is GLTFBIMMaterialExtensions matExt)
                                             return matExt.Id == _partData.Material.UniqueId;
                                 }
                                 return false;
@@ -1079,7 +1118,7 @@ namespace GLTFRevitExport {
                             name: _partData.Material.Name,
                             color: _partData.Material.Color.ToGLTF(_partData.Material.Transparency / 128f),
                             exts: new glTFExtension[] {
-                            new glTFBIMMaterialExtensions(_partData.Material, IncludeProperties, PropertyContainer)
+                            new GLTFBIMMaterialExtensions(_partData.Material, IncludeProperties, PropertyContainer)
                             },
                             extras: null
                         );
@@ -1141,12 +1180,12 @@ namespace GLTFRevitExport {
             var doc = _docStack.Last();
 
             // build asset extension and property source (if needed)
-            glTFBIMAssetExtension assetExt;
-            _propContainer = new glTFBIMPropertyContainer("properties.json");
+            GLTFBIMAssetExtension assetExt;
+            _propContainer = new GLTFBIMPropertyContainer("properties.json");
             if(_cfgs.EmbedParameters)
-                assetExt = new glTFBIMAssetExtension(doc, _cfgs.ExportParameters);
+                assetExt = new GLTFBIMAssetExtension(doc, _cfgs.ExportParameters);
             else {
-                assetExt = new glTFBIMAssetExtension(doc, _cfgs.ExportParameters, _propContainer);
+                assetExt = new GLTFBIMAssetExtension(doc, _cfgs.ExportParameters, _propContainer);
             }
 
             glTF.SetAsset(
@@ -1155,7 +1194,7 @@ namespace GLTFRevitExport {
                 exts: new glTFExtension[] { assetExt },
                 extras: extrasBuilder != null ? extrasBuilder(doc) : null
             );
-
+            
             // combine default filter with build filter
             ElementFilter actionFilter = null;
             if (filter != null) {
@@ -1165,7 +1204,9 @@ namespace GLTFRevitExport {
                         new ElementMulticategoryFilter(
                             new List<BuiltInCategory> {
                                 BuiltInCategory.OST_RvtLinks,
-                                BuiltInCategory.OST_Views
+                                BuiltInCategory.OST_Views,
+                                BuiltInCategory.OST_Levels,
+                                BuiltInCategory.OST_Grids
                             }
                         ),
                         filter
@@ -1181,6 +1222,8 @@ namespace GLTFRevitExport {
             // so it knows whether to run the corresponding END action or not
             var passResults = new Stack<bool>();
             foreach (var action in _actions) {
+                action.AssetExt = assetExt;
+                
                 action.IncludeHierarchy = _cfgs.ExportHierarchy;
                 action.IncludeProperties = _cfgs.ExportParameters;
                 // set the property source for the action if needed

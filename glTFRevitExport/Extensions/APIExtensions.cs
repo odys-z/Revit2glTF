@@ -8,8 +8,6 @@ using System.Web;
 
 using Autodesk.Revit.DB;
 
-using GLTFRevitExport.GLTF.Containers;
-
 namespace GLTFRevitExport.Extensions {
     internal static class APIExtensions {
         // Z-Up to Y-Up basis transform

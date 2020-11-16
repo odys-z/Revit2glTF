@@ -7,10 +7,10 @@ using System.Threading.Tasks;
 using Autodesk.Revit.DB;
 
 namespace GLTFRevitExport.GLTF.Extensions.BIM {
-    internal class glTFBIMMaterialExtensions : glTFBIMPropertyExtension {
-        internal glTFBIMMaterialExtensions(Element e,
+    internal class GLTFBIMMaterialExtensions : GLTFBIMPropertyExtension {
+        internal GLTFBIMMaterialExtensions(Element e,
                                            bool includeParameters,
-                                           glTFBIMPropertyContainer propContainer)
+                                           GLTFBIMPropertyContainer propContainer)
             : base(e, includeParameters, propContainer) { }
     }
 }

@@ -17,7 +17,7 @@ using System.Runtime.Serialization;
 namespace GLTFRevitExport.GLTF.Extensions.BIM {
     [Serializable]
 #pragma warning disable IDE1006 // Naming Styles
-    internal abstract class glTFBIMPropertyExtension : glTFBIMExtension {
+    internal abstract class GLTFBIMPropertyExtension : GLTFBIMExtension {
 #pragma warning restore IDE1006 // Naming Styles
         private const string _revitPrefix = "Revit";
 
@@ -34,7 +34,7 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
                 .Select(x => (BuiltInParameter)Enum.Parse(typeof(BuiltInParameter), x))
                 .ToArray();
 
-        internal glTFBIMPropertyExtension(Element e, bool includeParameters = true, glTFBIMPropertyContainer propContainer = null) {
+        internal GLTFBIMPropertyExtension(Element e, bool includeParameters = true, GLTFBIMPropertyContainer propContainer = null) {
             // identity data
             Id = e.GetId();
             Taxonomies = GetTaxonomies(e);

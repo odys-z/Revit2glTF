@@ -23,9 +23,14 @@ namespace GLTFRevitExport.GLTF {
         /// Pack the constructed glTF data into a container
         /// </summary>
         /// <returns></returns>
-        internal Tuple<string, List<byte[]>> Pack(bool singleBinary = true) {
-            List<byte> bufferBytes = new List<byte>();
+        internal List<GLTFPackageItem> Pack(bool singleBinary = true) {
+            // TODO: Add glb option
+            // create a gltf bundle
+            var bundleItems = new List<GLTFPackageItem>();
 
+            // add the buffers to the gltf and to the bundle
+            List<byte> bufferBytes = new List<byte>();
+            
             if (singleBinary) {
                 uint bufferIndex = 0;
                 foreach (var seg in _bufferSegments) {
@@ -76,27 +81,34 @@ namespace GLTFRevitExport.GLTF {
                     };
                     _gltf.Accessors.Add(accessor);
                 }
+
+                var buffer = new glTFBuffer {
+                    ByteLength = (uint)bufferBytes.Count,
+                    Uri = "buffer.bin"
+                };
+                _gltf.Buffers.Add(buffer);
+
+                bundleItems.Add(new GLTFPackageBinaryItem("buffer.bin", bufferBytes.ToArray()));
             }
             else {
                 // TODO: multiple binaries
             }
 
-            var buffer = new glTFBuffer {
-                ByteLength = (uint)bufferBytes.Count,
-                Uri = "buffer.bin"
-            };
-            _gltf.Buffers.Add(buffer);
-
             // store snapshot of collected data into a gltf structure
-            return new Tuple<string, List<byte[]>>(
+            var model = new GLTFPackageModelItem(
+                "model.gltf",
                 JsonConvert.SerializeObject(
                     _gltf,
                     new JsonSerializerSettings {
                         NullValueHandling = NullValueHandling.Ignore
                     }
-                ),
-                new List<byte[]> { bufferBytes.ToArray() }
+                )
             );
+
+            // finally add glTF model to the bundle
+            bundleItems.Add(model);
+            
+            return bundleItems;
         }
     }
     #endregion

@@ -145,21 +145,21 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="GLTF.Extensions.BIM\glTFBIMContainer.cs" />
-    <Compile Include="GLTF.Extensions.BIM\glTFBIMNodeExtensions.cs" />
-    <Compile Include="GLTF.Extensions.BIM\glTFBIMMaterialExtensions.cs" />
-    <Compile Include="GLTF.Extensions.BIM\glTFBIMPropertyContainer.cs" />
+    <Compile Include="GLTF.Extensions.BIM\GLTFBIMContainer.cs" />
+    <Compile Include="GLTF.Extensions.BIM\GLTFBIMNodeExtensions.cs" />
+    <Compile Include="GLTF.Extensions.BIM\GLTFBIMMaterialExtensions.cs" />
+    <Compile Include="GLTF.Extensions.BIM\GLTFBIMPropertyContainer.cs" />
     <Compile Include="GLTFBuildConfigs.cs" />
-    <Compile Include="GLTFContainer.cs" />
+    <Compile Include="GLTF\GLTFPackageItem.cs" />
     <Compile Include="Extensions\APIExtensions.cs" />
     <Compile Include="Extensions\NumberExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="GLTFExportConfigs.cs" />
     <Compile Include="GLTFExporter.cs" />
     <Compile Include="GLTF.Extensions.BIM\Attributes.cs" />
-    <Compile Include="GLTF.Extensions.BIM\glTFBIMExtension.cs" />
-    <Compile Include="GLTF.Extensions.BIM\glTFBIMAssetExtension.cs" />
-    <Compile Include="GLTF.Extensions.BIM\glTFBIMPropertyExtension.cs" />
+    <Compile Include="GLTF.Extensions.BIM\GLTFBIMExtension.cs" />
+    <Compile Include="GLTF.Extensions.BIM\GLTFBIMAssetExtension.cs" />
+    <Compile Include="GLTF.Extensions.BIM\GLTFBIMPropertyExtension.cs" />
     <Compile Include="GLTF\Schema\glTF.cs" />
     <Compile Include="GLTF\Schema\glTFAccessor.cs" />
     <Compile Include="GLTF\Schema\glTFAsset.cs" />
