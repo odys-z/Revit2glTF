@@ -20,8 +20,9 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
 #pragma warning restore IDE1006 // Naming Styles
         internal glTFBIMNodeExtension(Element e,
                                       Func<object, string[]> zoneFinder,
-                                      bool includeParameters = true)
-            : base(e, includeParameters )
+                                      bool includeParameters,
+                                      glTFBIMPropertyContainer propContainer)
+            : base(e, includeParameters, propContainer)
         {
             // set level
             if (e.Document.GetElement(e.LevelId) is Level level)

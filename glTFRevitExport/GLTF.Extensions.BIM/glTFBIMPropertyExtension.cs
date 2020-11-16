@@ -34,7 +34,7 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
                 .Select(x => (BuiltInParameter)Enum.Parse(typeof(BuiltInParameter), x))
                 .ToArray();
 
-        internal glTFBIMPropertyExtension(Element e, bool includeParameters = true) {
+        internal glTFBIMPropertyExtension(Element e, bool includeParameters = true, glTFBIMPropertyContainer propContainer = null) {
             // identity data
             Id = e.GetId();
             Taxonomies = GetTaxonomies(e);
@@ -47,11 +47,17 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
                 );
 
             // include parameters
-            if (includeParameters)
-                SetProperties(e);
+            if (includeParameters) {
+                if (propContainer is null)
+                    // embed properties
+                    Properties = GetProperties(e);
+                else
+                    // record properties
+                    propContainer.Record(Id, GetProperties(e));
+            }
         }
 
-        private void SetProperties(Element e) {
+        private Dictionary<string, object> GetProperties(Element e) {
             // exclude list for parameters that are processed by this
             // constructor and should not be included in 'this.Properties'
             var excludeParams = new List<BuiltInParameter>(excludeBuiltinParams);
@@ -81,7 +87,7 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
                 }
             }
 
-            Properties = GetParamValues(e, exclude: excludeParams);
+            return GetParamValues(e, exclude: excludeParams);
         }
 
         private List<string> GetTaxonomies(Element e) {

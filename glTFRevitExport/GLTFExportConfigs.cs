@@ -35,6 +35,11 @@ namespace GLTFRevitExport {
         public bool ExportParameters { get; set; } = true;
 
         /// <summary>
+        /// Whether to embed parameter data inside glTF file or write to external file
+        /// </summary>
+        public bool EmbedParameters { get; set; } = true;
+
+        /// <summary>
         /// Cancellation toke for cancelling the export progress
         /// </summary>
         public CancellationToken CancelToken;

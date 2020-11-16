@@ -145,8 +145,10 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GLTF.Extensions.BIM\glTFBIMContainer.cs" />
     <Compile Include="GLTF.Extensions.BIM\glTFBIMNodeExtensions.cs" />
     <Compile Include="GLTF.Extensions.BIM\glTFBIMMaterialExtensions.cs" />
+    <Compile Include="GLTF.Extensions.BIM\glTFBIMPropertyContainer.cs" />
     <Compile Include="GLTFBuildConfigs.cs" />
     <Compile Include="GLTFContainer.cs" />
     <Compile Include="Extensions\APIExtensions.cs" />

@@ -12,13 +12,26 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
 #pragma warning disable IDE1006 // Naming Styles
     internal class glTFBIMAssetExtension : glTFBIMExtension {
 #pragma warning restore IDE1006 // Naming Styles
-        internal glTFBIMAssetExtension(Document d, bool includeParameters = true) : base() {
+        internal glTFBIMAssetExtension(Document d, bool includeParameters = true, glTFBIMPropertyContainer propContainer = null) : base() {
             App = GetAppName(d);
             Id = GetDocumentId(d).ToString();
             Title = d.Title;
             Source = d.PathName;
-            if (includeParameters)
-                Properties = GetProjectInfo(d);
+            if (includeParameters) {
+                if (propContainer is null)
+                    // embed properties
+                    Properties = GetProjectInfo(d);
+                else {
+                    // record properties
+                    propContainer.Record(Id, GetProjectInfo(d));
+                    // ensure property sources list is initialized
+                    if (Containers is null)
+                        Containers = new List<glTFBIMPropertyContainer>();
+                    // add the new property source
+                    if (!Containers.Contains(propContainer))
+                        Containers.Add(propContainer);
+                }
+            }
         }
 
         private static string GetAppName(Document doc) {
@@ -80,6 +93,9 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
 
         [JsonProperty("source")]
         public string Source { get; set; }
+
+        [JsonProperty("containers")]
+        public List<glTFBIMPropertyContainer> Containers { get; set; }
 
         [JsonProperty("properties")]
         public Dictionary<string, object> Properties { get; set; }

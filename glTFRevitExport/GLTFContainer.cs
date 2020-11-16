@@ -10,6 +10,7 @@ using GLTFRevitExport.GLTF.Schema;
 namespace GLTFRevitExport.GLTF.Containers {
     public class GLTFContainer {
         public string Model;
+        public string Properties;
         public List<byte[]> Binaries;
     }
 }

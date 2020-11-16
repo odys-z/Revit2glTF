@@ -36,6 +36,7 @@ namespace GLTFRevitExport {
         {
             // ensure configs
             configs = configs ?? new GLTFBuildConfigs();
+
             // build the glTF
             var glTF = _ctx.Build(filter, zoneFinder, extrasBuilder);
             // pack the glTF data and get the container
@@ -45,6 +46,7 @@ namespace GLTFRevitExport {
 
             return new GLTFContainer {
                 Model = gltfPack.Item1,
+                Properties = _ctx.Properties,
                 Binaries = gltfPack.Item2
             };
         }

@@ -8,7 +8,9 @@ using Autodesk.Revit.DB;
 
 namespace GLTFRevitExport.GLTF.Extensions.BIM {
     internal class glTFBIMMaterialExtensions : glTFBIMPropertyExtension {
-        internal glTFBIMMaterialExtensions(Element e, bool includeParameters = true)
-            : base(e, includeParameters) { }
+        internal glTFBIMMaterialExtensions(Element e,
+                                           bool includeParameters,
+                                           glTFBIMPropertyContainer propContainer)
+            : base(e, includeParameters, propContainer) { }
     }
 }

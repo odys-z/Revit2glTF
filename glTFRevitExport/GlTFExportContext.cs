@@ -39,6 +39,11 @@ namespace GLTFRevitExport {
         private readonly GLTFExportConfigs _cfgs = new GLTFExportConfigs();
 
         /// <summary>
+        /// Property value container when property information is not embedded
+        /// </summary>
+        private glTFBIMPropertyContainer _propContainer;
+
+        /// <summary>
         /// Document stack to hold the documents being processed.
         /// A stack is used to allow processing nested documents (linked docs)
         /// </summary>
@@ -665,6 +670,7 @@ namespace GLTFRevitExport {
         abstract class BaseExporterAction {
             public bool IncludeHierarchy = true;
             public bool IncludeProperties = true;
+            public glTFBIMPropertyContainer PropertyContainer = null;
 
             public abstract void Execute(GLTFBuilder gltf, GLTFExportConfigs cfg);
         }
@@ -724,7 +730,7 @@ namespace GLTFRevitExport {
                 gltf.OpenScene(
                     name: element.Name,
                     exts: new glTFExtension[] {
-                        new glTFBIMNodeExtension(element, zoneFinder, IncludeProperties)
+                        new glTFBIMNodeExtension(element, zoneFinder, IncludeProperties, PropertyContainer)
                     },
                     extras: extrasBuilder(element)
                     );
@@ -767,7 +773,7 @@ namespace GLTFRevitExport {
                             name: element.Name,
                             matrix: null,
                             exts: new glTFExtension[] {
-                                new glTFBIMNodeExtension(element, null, IncludeProperties)
+                                new glTFBIMNodeExtension(element, null, IncludeProperties, PropertyContainer)
                             },
                             extras: extrasBuilder(element)
                             );
@@ -842,7 +848,7 @@ namespace GLTFRevitExport {
                                     name: material.Name,
                                     color: material.Color.ToGLTF(),
                                     exts: new glTFExtension[] {
-                            new glTFBIMMaterialExtensions(material, IncludeProperties)
+                            new glTFBIMMaterialExtensions(material, IncludeProperties, PropertyContainer)
                                     },
                                     extras: null
                                 );
@@ -903,7 +909,7 @@ namespace GLTFRevitExport {
                             name: _elementType.Name,
                             matrix: null,
                             exts: new glTFExtension[] {
-                                new glTFBIMNodeExtension(_elementType, null, IncludeProperties)
+                                new glTFBIMNodeExtension(_elementType, null, IncludeProperties, PropertyContainer)
                             },
                             extras: extrasBuilder(_elementType)
                         );
@@ -925,7 +931,7 @@ namespace GLTFRevitExport {
                         name: element.Name,
                         matrix: null,
                         exts: new glTFExtension[] {
-                            new glTFBIMNodeExtension(element, zoneFinder, IncludeProperties)
+                            new glTFBIMNodeExtension(element, zoneFinder, IncludeProperties, PropertyContainer)
                         },
                         extras: extrasBuilder(element)
                     );
@@ -1073,7 +1079,7 @@ namespace GLTFRevitExport {
                             name: _partData.Material.Name,
                             color: _partData.Material.Color.ToGLTF(_partData.Material.Transparency / 128f),
                             exts: new glTFExtension[] {
-                            new glTFBIMMaterialExtensions(_partData.Material, IncludeProperties)
+                            new glTFBIMMaterialExtensions(_partData.Material, IncludeProperties, PropertyContainer)
                             },
                             extras: null
                         );
@@ -1117,6 +1123,15 @@ namespace GLTFRevitExport {
             _skipElement = false;
         }
 
+        internal string Properties {
+            get {
+                if (_propContainer is null)
+                    return null;
+                else
+                    return _propContainer.Pack();
+            }
+        }
+        
         internal GLTFBuilder Build(ElementFilter filter,
                                    Func<object, string[]> zoneFinder,
                                    Func<object, glTFExtras> extrasBuilder) {
@@ -1124,14 +1139,22 @@ namespace GLTFRevitExport {
 
             // build asset info
             var doc = _docStack.Last();
+
+            // build asset extension and property source (if needed)
+            glTFBIMAssetExtension assetExt;
+            _propContainer = new glTFBIMPropertyContainer("properties.json");
+            if(_cfgs.EmbedParameters)
+                assetExt = new glTFBIMAssetExtension(doc, _cfgs.ExportParameters);
+            else {
+                assetExt = new glTFBIMAssetExtension(doc, _cfgs.ExportParameters, _propContainer);
+            }
+
             glTF.SetAsset(
                 generatorId: _cfgs.GeneratorId,
                 copyright: _cfgs.CopyrightMessage,
-                exts: new glTFExtension[] {
-                    new glTFBIMAssetExtension(doc, _cfgs.ExportParameters)
-                },
+                exts: new glTFExtension[] { assetExt },
                 extras: extrasBuilder != null ? extrasBuilder(doc) : null
-                );
+            );
 
             // combine default filter with build filter
             ElementFilter actionFilter = null;
@@ -1160,6 +1183,9 @@ namespace GLTFRevitExport {
             foreach (var action in _actions) {
                 action.IncludeHierarchy = _cfgs.ExportHierarchy;
                 action.IncludeProperties = _cfgs.ExportParameters;
+                // set the property source for the action if needed
+                if (!_cfgs.EmbedParameters)
+                    action.PropertyContainer = _propContainer;
 
                 switch (action) {
                     case ExporterBeginAction beg:
