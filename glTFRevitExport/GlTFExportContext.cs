@@ -247,7 +247,11 @@ namespace GLTFRevitExport {
     #endregion
 
     #region IExportContext Implementation
+#if REVIT2019
+    internal sealed partial class GLTFExportContext : IExportContext, IModelExportContext {
+#else
     internal sealed partial class GLTFExportContext : IExportContext, IExportContextBase, IModelExportContext {
+#endif
         #region Start, Stop, Cancel
         // Runs once at beginning of export. Sets up the root node
         // and scene.
@@ -282,9 +286,9 @@ namespace GLTFRevitExport {
             }
             return _cfgs.CancelToken.IsCancellationRequested;
         }
-        #endregion
+#endregion
 
-        #region Views
+#region Views
         // revit calls this on every view that is being processed
         // all other methods are called after a view has begun
         public RenderNodeAction OnViewBegin(ViewNode node) {
@@ -325,9 +329,9 @@ namespace GLTFRevitExport {
                 _actions.Enqueue(new OnSceneEndAction());
             }
         }
-        #endregion
+#endregion
 
-        #region Elements
+#region Elements
         // Runs once for each element.
         public RenderNodeAction OnElementBegin(ElementId eid) {
             if (_docStack.Peek() is Document doc) {
@@ -472,9 +476,9 @@ namespace GLTFRevitExport {
             }
             Logger.Log("- instance end");
         }
-        #endregion
+#endregion
 
-        #region Linked Models
+#region Linked Models
         public RenderNodeAction OnLinkBegin(LinkNode node) {
             if (_docStack.Peek() is Document) {
                 if (_cfgs.ExportLinkedModels) {
@@ -507,9 +511,9 @@ namespace GLTFRevitExport {
                 }
             }
         }
-        #endregion
+#endregion
 
-        #region Material and Geometry
+#region Material and Geometry
         // Runs every time, and immediately prior to, a mesh being processed
         // e.g. OnMaterial->OnFace->OnPolymesh
         // It supplies the material for the mesh, and we use this to create
@@ -604,9 +608,9 @@ namespace GLTFRevitExport {
         public void OnFaceEnd(FaceNode node) {
             Logger.Log("- face end");
         }
-        #endregion
+#endregion
 
-        #region Misc
+#region Misc
         public void OnRPC(RPCNode node) {
             Logger.Log("> rpc");
         }
@@ -660,11 +664,11 @@ namespace GLTFRevitExport {
         //    Logger.Log("> face silhouette 2d");
         //    return RenderNodeAction.Proceed;
         //}
-        #endregion
+#endregion
     }
-    #endregion
+#endregion
 
-    #region Exporter Actions
+#region Exporter Actions
     internal sealed partial class GLTFExportContext : IExportContext {
         abstract class BaseExporterAction {
             public GLTFBIMAssetExtension AssetExt;
@@ -899,7 +903,7 @@ namespace GLTFRevitExport {
                         // make a matrix from level elevation
                         float elev = level.Elevation.ToGLTFLength();
                         float[] elevMatrix = null;
-                        if (elev > 0f) {
+                        if (elev != 0f) {
                             elevMatrix = new float[16] {
                                 1f,   0f,   0f,   0f,
                                 0f,   1f,   0f,   0f,
@@ -1127,9 +1131,9 @@ namespace GLTFRevitExport {
             }
         }
     }
-    #endregion
+#endregion
 
-    #region Utility Methods
+#region Utility Methods
     internal sealed partial class GLTFExportContext : IExportContext {
         /// <summary>
         /// Determine if given element should be skipped
@@ -1266,5 +1270,5 @@ namespace GLTFRevitExport {
             return glTF;
         }
     }
-    #endregion
+#endregion
 }

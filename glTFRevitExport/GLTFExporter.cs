@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Autodesk.Revit.DB;
 
+using GLTFRevitExport.Properties;
 using GLTFRevitExport.GLTF;
 using GLTFRevitExport.GLTF.Schema;
 
