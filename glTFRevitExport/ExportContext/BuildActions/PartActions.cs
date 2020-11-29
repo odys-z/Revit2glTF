@@ -134,19 +134,13 @@ namespace GLTFRevitExport.ExportContext.BuildActions {
             foreach (var vec in _partData.Primitive.Vertices)
                 vertices.AddRange(vec.ToArray());
 
-            var normals = new List<float>();
-            //if (_partData.Primitive.Normals != null) {
-            //    foreach (var vec in _partData.Primitive.Normals)
-            //        normals.AddRange(vec.ToArray());
-            //}
-
             var faces = new List<uint>();
             foreach (var facet in _partData.Primitive.Faces)
                 faces.AddRange(facet.ToArray());
 
             var primIndex = gltf.AddPrimitive(
                 vertices: vertices.ToArray(),
-                normals: normals.Count > 0 ? normals.ToArray() : null,
+                normals: null,
                 faces: faces.ToArray()
                 );
 

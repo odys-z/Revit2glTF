@@ -451,17 +451,10 @@ namespace GLTFRevitExport.ExportContext {
                 List<VectorData> vertices =
                     polymesh.GetPoints().Select(x => new VectorData(x)).ToList();
 
-                List<VectorData> normals = null;
-                // TODO: what about the other .DistributionOfNormals options?
-                if (polymesh.DistributionOfNormals == DistributionOfNormals.AtEachPoint)
-                    normals = polymesh.GetNormals().Select(x => new VectorData(x)).ToList();
-
                 List<FacetData> faces =
                     polymesh.GetFacets().Select(x => new FacetData(x)).ToList();
 
-                var newPrim = new PrimitiveData(vertices, faces) {
-                    Normals = normals,
-                };
+                var newPrim = new PrimitiveData(vertices, faces);
 
                 if (activePart.Primitive is null)
                     activePart.Primitive = newPrim;
