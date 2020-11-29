@@ -6,11 +6,13 @@ using System.Threading.Tasks;
 
 using Autodesk.Revit.DB;
 
+using GLTFRevitExport.GLTF.Extensions.BIM.BaseTypes;
+
 namespace GLTFRevitExport.GLTF.Extensions.BIM {
-    internal class GLTFBIMMaterialExtensions : GLTFBIMPropertyExtension {
-        internal GLTFBIMMaterialExtensions(Element e,
-                                           bool includeParameters,
-                                           GLTFBIMPropertyContainer propContainer)
+    class GLTFBIMMaterialExtensions : GLTFBIMPropertyExtension {
+        public GLTFBIMMaterialExtensions(Element e,
+                                         bool includeParameters,
+                                         GLTFBIMPropertyContainer propContainer)
             : base(e, includeParameters, propContainer) { }
     }
 }

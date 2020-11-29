@@ -145,21 +145,39 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="GLTF.Extensions.BIM\GLTFBIMContainer.cs" />
+    <Compile Include="ExportContext\BuildActions\BaseTypes.cs" />
+    <Compile Include="ExportContext\BuildActions\ElementActions.cs" />
+    <Compile Include="ExportContext\BuildActions\PartActions.cs" />
+    <Compile Include="ExportContext\BuildActions\LevelGridZoneActions.cs" />
+    <Compile Include="ExportContext\BuildActions\LinkActions.cs" />
+    <Compile Include="ExportContext\BuildActions\SceneActions.cs" />
+    <Compile Include="ExportContext\BuildContext.cs" />
+    <Compile Include="ExportContext\Geometry\FacetData.cs" />
+    <Compile Include="ExportContext\Geometry\PartData.cs" />
+    <Compile Include="ExportContext\Geometry\PrimitiveData.cs" />
+    <Compile Include="ExportContext\Geometry\VectorData.cs" />
+    <Compile Include="GLTF.Extensions.BIM\BaseTypes\GLTFBIMContainer.cs" />
     <Compile Include="GLTF.Extensions.BIM\GLTFBIMNodeExtensions.cs" />
     <Compile Include="GLTF.Extensions.BIM\GLTFBIMMaterialExtensions.cs" />
     <Compile Include="GLTF.Extensions.BIM\GLTFBIMPropertyContainer.cs" />
     <Compile Include="GLTFBuildConfigs.cs" />
-    <Compile Include="GLTF\GLTFPackageItem.cs" />
-    <Compile Include="Extensions\APIExtensions.cs" />
+    <Compile Include="GLTF\BufferSegments\GLTFBufferScalar1Segment.cs" />
+    <Compile Include="GLTF\BufferSegments\GLTFBufferScalar2Segment.cs" />
+    <Compile Include="GLTF\BufferSegments\GLTFBufferScalar4Segment.cs" />
+    <Compile Include="GLTF\BufferSegments\BaseTypes.cs" />
+    <Compile Include="GLTF\BufferSegments\GLTFBufferVectorSegment.cs" />
+    <Compile Include="GLTF\Package\GLTFPackageBinaryItem.cs" />
+    <Compile Include="GLTF\Package\BaseTypes.cs" />
+    <Compile Include="Extensions\RevitAPIExtensions.cs" />
     <Compile Include="Extensions\NumberExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="GLTFExportConfigs.cs" />
     <Compile Include="GLTFExporter.cs" />
-    <Compile Include="GLTF.Extensions.BIM\Attributes.cs" />
-    <Compile Include="GLTF.Extensions.BIM\GLTFBIMExtension.cs" />
+    <Compile Include="GLTF.Extensions.BIM\BaseTypes\GLTFBIMExtension.cs" />
     <Compile Include="GLTF.Extensions.BIM\GLTFBIMAssetExtension.cs" />
-    <Compile Include="GLTF.Extensions.BIM\GLTFBIMPropertyExtension.cs" />
+    <Compile Include="GLTF.Extensions.BIM\BaseTypes\GLTFBIMPropertyExtension.cs" />
+    <Compile Include="GLTF\Package\GLTFPackageJsonItem.cs" />
+    <Compile Include="GLTF\Package\GLTFPackageModelItem.cs" />
     <Compile Include="GLTF\Schema\glTF.cs" />
     <Compile Include="GLTF\Schema\glTFAccessor.cs" />
     <Compile Include="GLTF\Schema\glTFAsset.cs" />
@@ -176,8 +194,8 @@
     <Compile Include="GLTF\Schema\glTFNodes.cs" />
     <Compile Include="GLTF\Schema\glTFProperty.cs" />
     <Compile Include="GLTF\Schema\glTFScene.cs" />
-    <Compile Include="Logger.cs" />
-    <Compile Include="GlTFExportContext.cs" />
+    <Compile Include="ExportContext\Logger.cs" />
+    <Compile Include="ExportContext\GLTFExportContext.cs" />
     <Compile Include="GLTF\GLTFBuilder.cs" />
     <Compile Include="Properties\StringLib.Designer.cs">
       <AutoGen>True</AutoGen>

@@ -1,20 +1,17 @@
 ﻿using System;
-using System.Linq;
 using System.Collections.Generic;
 
 using Newtonsoft.Json;
 
-using Autodesk.Revit.DB;
-
-using GLTFRevitExport.Extensions;
+using GLTFRevitExport.GLTF.Extensions.BIM.BaseTypes;
 
 namespace GLTFRevitExport.GLTF.Extensions.BIM {
     [Serializable]
-    internal class GLTFBIMPropertyContainer : GLTFBIMContainer {
+    class GLTFBIMPropertyContainer : GLTFBIMContainer {
         private string _uri;
         private GLTFBIMPropertyData _propData = new GLTFBIMPropertyData();
 
-        internal GLTFBIMPropertyContainer(string uri) {
+        public GLTFBIMPropertyContainer(string uri) {
             _uri = uri;
         }
 
@@ -38,7 +35,7 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
     }
 
     [Serializable]
-    internal class GLTFBIMPropertyData {
+    class GLTFBIMPropertyData {
         [JsonProperty("records", Order = 1)]
         public Dictionary<string, HashSet<uint>> Records { get; set; } = new Dictionary<string, HashSet<uint>>();
 
@@ -96,7 +93,7 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
     }
 
     [Serializable]
-    internal class GLTFBIMPropertyDataGroup {
+    class GLTFBIMPropertyDataGroup {
         [JsonProperty("keys", Order = 1)]
         public List<uint> Keys { get; set; } = new List<uint>();
 

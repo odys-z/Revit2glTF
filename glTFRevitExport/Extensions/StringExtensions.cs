@@ -10,7 +10,7 @@ using Autodesk.Revit.DB;
 using GLTFRevitExport.GLTF;
 
 namespace GLTFRevitExport.Extensions {
-    internal static class StringExtensions {
+    static class StringExtensions {
         public static string UriEncode(this string source)
             //=> HttpUtility.UrlPathEncode(source);
             => source;

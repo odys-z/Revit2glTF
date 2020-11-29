@@ -12,7 +12,7 @@ namespace GLTFRevitExport.GLTF.Schema {
     /// </summary>
     // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#buffers-and-buffer-views
     [Serializable]
-    internal class glTFBuffer {
+    class glTFBuffer {
         /// <summary>
         /// The uri of the buffer.
         /// </summary>

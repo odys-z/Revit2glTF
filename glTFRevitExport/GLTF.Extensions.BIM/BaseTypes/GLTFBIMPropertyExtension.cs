@@ -1,22 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 using Newtonsoft.Json;
 
 using Autodesk.Revit.DB;
 
 using GLTFRevitExport.Extensions;
-using GLTFRevitExport.GLTF.Schema;
-using GLTFRevitExport.GLTF;
-using GLTFRevitExport.Properties;
-using System.Runtime.Serialization;
 
-namespace GLTFRevitExport.GLTF.Extensions.BIM {
+namespace GLTFRevitExport.GLTF.Extensions.BIM.BaseTypes {
+    [AttributeUsage(AttributeTargets.Property)]
+    class RevitBuiltinParametersAttribute : Attribute {
+        public BuiltInParameter TypeParam { get; private set; }
+        public BuiltInParameter InstanceParam { get; private set; }
+
+        public RevitBuiltinParametersAttribute(BuiltInParameter typeParam, BuiltInParameter instParam) {
+            TypeParam = typeParam;
+            InstanceParam = instParam;
+        }
+    }
+
     [Serializable]
-    internal abstract class GLTFBIMPropertyExtension : GLTFBIMExtension {
+    abstract class GLTFBIMPropertyExtension : GLTFBIMExtension {
         private const string _revitPrefix = "Revit";
 
         private readonly BuiltInParameter[] excludeBuiltinParams =
@@ -32,7 +37,7 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
                 .Select(x => (BuiltInParameter)Enum.Parse(typeof(BuiltInParameter), x))
                 .ToArray();
 
-        internal GLTFBIMPropertyExtension(Element e, bool includeParameters = true, GLTFBIMPropertyContainer propContainer = null) {
+        public GLTFBIMPropertyExtension(Element e, bool includeParameters = true, GLTFBIMPropertyContainer propContainer = null) {
             // identity data
             Id = e.GetId();
             Taxonomies = GetTaxonomies(e);
@@ -65,8 +70,8 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
             // set the properties on this object from their associated builtin params
             foreach (var propInfo in GetType().GetProperties()) {
                 var apiParamInfo =
-                    propInfo.GetCustomAttributes(typeof(APIBuiltinParametersAttribute), false)
-                            .Cast<APIBuiltinParametersAttribute>()
+                    propInfo.GetCustomAttributes(typeof(RevitBuiltinParametersAttribute), false)
+                            .Cast<RevitBuiltinParametersAttribute>()
                             .FirstOrDefault();
                 if (apiParamInfo != null) {
                     object paramValue =
@@ -198,7 +203,7 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
         public List<string> Classes { get; set; } = new List<string>();
 
         [JsonProperty("mark", Order = 4)]
-        [APIBuiltinParameters(
+        [RevitBuiltinParameters(
             BuiltInParameter.ALL_MODEL_TYPE_MARK,
             BuiltInParameter.ALL_MODEL_MARK
             )
@@ -206,7 +211,7 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
         public string Mark { get; set; }
 
         [JsonProperty("description", Order = 5)]
-        [APIBuiltinParameters(
+        [RevitBuiltinParameters(
             BuiltInParameter.ALL_MODEL_DESCRIPTION,
             BuiltInParameter.ALL_MODEL_DESCRIPTION
             )
@@ -214,7 +219,7 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
         public string Description { get; set; }
 
         [JsonProperty("comment", Order = 6)]
-        [APIBuiltinParameters(
+        [RevitBuiltinParameters(
             BuiltInParameter.ALL_MODEL_TYPE_COMMENTS,
             BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS
             )
@@ -225,7 +230,7 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
         public string Uri { get; set; }
 
         [JsonProperty("dataUrl", Order = 8)]
-        [APIBuiltinParameters(
+        [RevitBuiltinParameters(
             BuiltInParameter.ALL_MODEL_URL,
             BuiltInParameter.ALL_MODEL_URL
             )
@@ -233,7 +238,7 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
         public string DataUrl { get; set; }
 
         [JsonProperty("imageUrl", Order = 9)]
-        [APIBuiltinParameters(
+        [RevitBuiltinParameters(
             BuiltInParameter.ALL_MODEL_TYPE_IMAGE,
             BuiltInParameter.ALL_MODEL_IMAGE
             )

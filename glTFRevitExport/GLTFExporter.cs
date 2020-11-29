@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+
 using Autodesk.Revit.DB;
 
-using GLTFRevitExport.Properties;
-using GLTFRevitExport.GLTF;
 using GLTFRevitExport.GLTF.Schema;
+using GLTFRevitExport.GLTF.Package;
+using GLTFRevitExport.ExportContext;
 
 namespace GLTFRevitExport {
     public class GLTFExporter {

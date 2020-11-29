@@ -1,25 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Runtime.Serialization;
 
 using Newtonsoft.Json;
 
 using Autodesk.Revit.DB;
 
 using GLTFRevitExport.Extensions;
-using GLTFRevitExport.GLTF.Schema;
-using GLTFRevitExport.GLTF;
-using GLTFRevitExport.Properties;
-using System.Runtime.Serialization;
+using GLTFRevitExport.GLTF.Extensions.BIM.BaseTypes;
 
 namespace GLTFRevitExport.GLTF.Extensions.BIM {
-    internal class GLTFBIMNodeExtension : GLTFBIMPropertyExtension {
-        internal GLTFBIMNodeExtension(Element e,
-                                      Func<object, string[]> zoneFinder,
-                                      bool includeParameters,
-                                      GLTFBIMPropertyContainer propContainer)
+    class GLTFBIMNodeExtension : GLTFBIMPropertyExtension {
+        public GLTFBIMNodeExtension(Element e,
+                                    Func<object, string[]> zoneFinder,
+                                    bool includeParameters,
+                                    GLTFBIMPropertyContainer propContainer)
             : base(e, includeParameters, propContainer)
         {
             // set level
@@ -41,8 +36,8 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
     }
 
     [Serializable]
-    internal class GLTFBIMBounds : ISerializable {
-        internal GLTFBIMBounds(BoundingBoxXYZ bbox) {
+    class GLTFBIMBounds : ISerializable {
+        public GLTFBIMBounds(BoundingBoxXYZ bbox) {
             Min = new GLTFBIMVector(bbox.Min);
             Max = new GLTFBIMVector(bbox.Max);
         }
@@ -71,11 +66,8 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
         }
     }
 
-    // TODO: serialize into 3 double values
     [Serializable]
-#pragma warning disable IDE1006 // Naming Styles
-    internal class GLTFBIMVector {
-#pragma warning restore IDE1006 // Naming Styles
+    class GLTFBIMVector {
         public float X { get; set; }
         public float Y { get; set; }
         public float Z { get; set; }

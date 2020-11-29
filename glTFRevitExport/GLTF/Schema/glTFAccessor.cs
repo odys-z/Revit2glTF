@@ -13,7 +13,7 @@ namespace GLTFRevitExport.GLTF.Schema {
     /// </summary>
     // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#accessors
     [Serializable]
-    internal class glTFAccessor : glTFProperty {
+    class glTFAccessor : glTFProperty {
         /// <summary>
         /// The index of the bufferView.
         /// </summary>

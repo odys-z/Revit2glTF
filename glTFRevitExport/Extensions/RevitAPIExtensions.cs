@@ -1,15 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-using System.Web;
 
 using Autodesk.Revit.DB;
 
 namespace GLTFRevitExport.Extensions {
-    internal static class APIExtensions {
+    static class RevitAPIExtensions {
         // Z-Up to Y-Up basis transform
         public static Transform ZTOY =
             Transform.CreateRotation(new XYZ(1, 0, 0), -Math.PI / 2.0);

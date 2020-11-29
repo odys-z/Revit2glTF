@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace GLTFRevitExport.Extensions {
-    internal static class NumberExtensions {
+    static class NumberExtensions {
         /// <summary>
         /// Consider a Revit length zero 
         /// if is smaller than this.

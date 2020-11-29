@@ -11,7 +11,7 @@ namespace GLTFRevitExport.GLTF.Schema {
     /// The list of accessors available to the renderer for a particular mesh.
     /// </summary>
     // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#meshes
-    internal class glTFAttributes {
+    class glTFAttributes {
 
         /// <summary>
         /// The index of the accessor for position data

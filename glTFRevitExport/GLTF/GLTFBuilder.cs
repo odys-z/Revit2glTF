@@ -1,23 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Security.Cryptography;
-using System.Text;
 
 using Newtonsoft.Json;
 
 using GLTFRevitExport.GLTF.Schema;
 using GLTFRevitExport.Properties;
-using System.Text.RegularExpressions;
+using GLTFRevitExport.GLTF.BufferSegments;
+using GLTFRevitExport.GLTF.Package;
 
 namespace GLTFRevitExport.GLTF {
     #region Initialization, Completion
-    internal sealed partial class GLTFBuilder {
-        public string Name { get; set; } = "model";
+    sealed partial class GLTFBuilder {
+        private string _name;
 
-        internal GLTFBuilder() {
+        public GLTFBuilder(string name) {
+            _name = name;
             _gltf = new glTF();
         }
 
@@ -25,7 +23,7 @@ namespace GLTFRevitExport.GLTF {
         /// Pack the constructed glTF data into a container
         /// </summary>
         /// <returns></returns>
-        internal List<GLTFPackageItem> Pack(bool singleBinary = true) {
+        public List<GLTFPackageItem> Pack(bool singleBinary = true) {
             // TODO: Add glb option
             // create a gltf bundle
             var bundleItems = new List<GLTFPackageItem>();
@@ -86,11 +84,11 @@ namespace GLTFRevitExport.GLTF {
 
                 var buffer = new glTFBuffer {
                     ByteLength = (uint)bufferBytes.Count,
-                    Uri = $"{Name}.bin"
+                    Uri = $"{_name}.bin"
                 };
                 _gltf.Buffers.Add(buffer);
 
-                bundleItems.Add(new GLTFPackageBinaryItem($"{Name}.bin", bufferBytes.ToArray()));
+                bundleItems.Add(new GLTFPackageBinaryItem($"{_name}.bin", bufferBytes.ToArray()));
             }
             else {
                 // TODO: multiple binaries
@@ -98,7 +96,7 @@ namespace GLTFRevitExport.GLTF {
 
             // store snapshot of collected data into a gltf structure
             var model = new GLTFPackageModelItem(
-                name: $"{Name}.gltf",
+                uri: $"{_name}.gltf",
                 modelData: JsonConvert.SerializeObject(
                     _gltf,
                     new JsonSerializerSettings {
@@ -116,162 +114,17 @@ namespace GLTFRevitExport.GLTF {
     #endregion
 
     #region Data stacks
-    internal sealed partial class GLTFBuilder {
+    sealed partial class GLTFBuilder {
         private readonly glTF _gltf = null;
 
-        abstract class BufferSegment {
-            public abstract glTFAccessorType Type { get; }
-            public abstract glTFAccessorComponentType DataType { get; }
-            public abstract glTFBufferViewTargets Target { get; }
-            public abstract uint Count { get; }
-            public abstract byte[] ToByteArray();
-
-            public abstract object[] Min { get; }
-            public abstract object[] Max { get; }
-        }
-
-        abstract class BufferSegment<T> : BufferSegment {
-            private string _hash = null;
-            public T[] Data;
-            protected T[] _min;
-            protected T[] _max;
-
-            public override object[] Min {
-                get {
-                    var min = new object[_min.Length];
-                    Array.Copy(_min, min, _min.Length);
-                    return min;
-                }
-            }
-            public override object[] Max {
-                get {
-                    var max = new object[_max.Length];
-                    Array.Copy(_max, max, _max.Length);
-                    return max;
-                }
-            }
-
-            public override uint Count => (uint)Data.Length;
-
-            public override bool Equals(object obj) {
-                if (obj is BufferSegment<T> other)
-                    return ComputeHash() == other.ComputeHash();
-                return false;
-            }
-
-            public override int GetHashCode() => base.GetHashCode();
-
-            private string ComputeHash() {
-                if (_hash is null)
-                    _hash = Encoding.UTF8.GetString(
-                        SHA256.Create().ComputeHash(ToByteArray())
-                        );
-                return _hash;
-            }
-        }
-
-        class BufferVectorSegment : BufferSegment<float> {
-            public override glTFAccessorType Type => glTFAccessorType.VEC3;
-            public override glTFAccessorComponentType DataType => glTFAccessorComponentType.FLOAT;
-            public override glTFBufferViewTargets Target => glTFBufferViewTargets.ARRAY_BUFFER;
-
-            public BufferVectorSegment(float[] vectors) {
-                if (vectors.Length % 3 != 0)
-                    throw new Exception(StringLib.ArrayIsNotVector3Data);
-                Data = vectors;
-                SetBounds(Data);
-            }
-
-            public override uint Count => (uint)(Data.Length / 3);
-
-            public override byte[] ToByteArray() {
-                int dataSize = Data.Length * sizeof(float);
-                var byteArray = new byte[dataSize];
-                Buffer.BlockCopy(Data, 0, byteArray, 0, dataSize);
-                return byteArray;
-            }
-
-            private void SetBounds(float[] vectors) {
-                // TODO: improve logic and performance
-                List<float> vx = new List<float>();
-                List<float> vy = new List<float>();
-                List<float> vz = new List<float>();
-                for (int i = 0; i < vectors.Length; i += 3) {
-                    vx.Add(vectors[i]);
-                    vy.Add(vectors[i + 1]);
-                    vz.Add(vectors[i + 2]);
-                }
-
-                _min = new float[] { vx.Min(), vy.Min(), vz.Min() };
-                _max = new float[] { vx.Max(), vy.Max(), vz.Max() };
-            }
-        }
-
-        class BufferScalar1Segment : BufferSegment<byte> {
-            public override glTFAccessorType Type => glTFAccessorType.SCALAR;
-            public override glTFAccessorComponentType DataType => glTFAccessorComponentType.UNSIGNED_BYTE;
-            public override glTFBufferViewTargets Target => glTFBufferViewTargets.ELEMENT_ARRAY_BUFFER;
-
-            public BufferScalar1Segment(byte[] scalars) {
-                Data = scalars;
-                _min = new byte[] { Data.Min() };
-                _max = new byte[] { Data.Max() };
-            }
-
-            public override byte[] ToByteArray() => Data;
-        }
-
-        class BufferScalar2Segment : BufferSegment<ushort> {
-            public override glTFAccessorType Type => glTFAccessorType.SCALAR;
-            public override glTFAccessorComponentType DataType => glTFAccessorComponentType.UNSIGNED_SHORT;
-            public override glTFBufferViewTargets Target => glTFBufferViewTargets.ELEMENT_ARRAY_BUFFER;
-
-            public BufferScalar2Segment(ushort[] scalars) {
-                Data = scalars;
-                _min = new ushort[] { Data.Min() };
-                _max = new ushort[] { Data.Max() };
-            }
-
-            public override byte[] ToByteArray() {
-                int dataSize = Data.Length * sizeof(ushort);
-                var byteArray = new byte[dataSize];
-                Buffer.BlockCopy(Data, 0, byteArray, 0, dataSize);
-                return byteArray;
-            }
-        }
-
-        class BufferScalar4Segment : BufferSegment<uint> {
-            public override glTFAccessorType Type => glTFAccessorType.SCALAR;
-            public override glTFAccessorComponentType DataType => glTFAccessorComponentType.UNSIGNED_INT;
-            public override glTFBufferViewTargets Target => glTFBufferViewTargets.ELEMENT_ARRAY_BUFFER;
-
-            public BufferScalar4Segment(uint[] scalars) {
-                Data = scalars;
-                _min = new uint[] { Data.Min() };
-                _max = new uint[] { Data.Max() };
-            }
-
-            public override byte[] ToByteArray() {
-                int dataSize = Data.Length * sizeof(uint);
-                var byteArray = new byte[dataSize];
-                Buffer.BlockCopy(Data, 0, byteArray, 0, dataSize);
-                return byteArray;
-            }
-        }
-
-        private readonly List<BufferSegment> _bufferSegments = new List<BufferSegment>();
+        private readonly List<GLTFBufferSegment> _bufferSegments = new List<GLTFBufferSegment>();
         private readonly Queue<glTFMeshPrimitive> _primQueue = new Queue<glTFMeshPrimitive>();
     }
 
     #endregion
 
     #region Builders
-    internal sealed partial class GLTFBuilder {
-        public void UseExtension(glTFExtension ext) {
-            if (_gltf.ExtensionsUsed is null)
-                _gltf.ExtensionsUsed = new HashSet<string>();
-            _gltf.ExtensionsUsed.Add(ext.Name);
-        }
+    sealed partial class GLTFBuilder {
         #region Asset
         public void SetAsset(string generatorId, string copyright,
                              glTFExtension[] exts, glTFExtras extras) {
@@ -290,6 +143,12 @@ namespace GLTFRevitExport.GLTF {
                 Extensions = assetExts.Count > 0 ? assetExts : null,
                 Extras = extras
             };
+        }
+
+        public void UseExtension(glTFExtension ext) {
+            if (_gltf.ExtensionsUsed is null)
+                _gltf.ExtensionsUsed = new HashSet<string>();
+            _gltf.ExtensionsUsed.Add(ext.Name);
         }
         #endregion
 
@@ -425,7 +284,7 @@ namespace GLTFRevitExport.GLTF {
 
             if (PeekNode() is glTFNode) {
                 // process vertex data
-                var vertexBuffer = new BufferVectorSegment(vertices);
+                var vertexBuffer = new GLTFBufferVectorSegment(vertices);
                 var vBuffIdx = _bufferSegments.IndexOf(vertexBuffer);
                 if (vBuffIdx < 0) {
                     _bufferSegments.Add(vertexBuffer);
@@ -435,7 +294,7 @@ namespace GLTFRevitExport.GLTF {
                 // process normal data if available
                 int nBuffIdx = -1;
                 if (normals != null) {
-                    var normalBuffer = new BufferVectorSegment(normals);
+                    var normalBuffer = new GLTFBufferVectorSegment(normals);
                     nBuffIdx = _bufferSegments.IndexOf(normalBuffer);
                     if (nBuffIdx < 0) {
                         _bufferSegments.Add(normalBuffer);
@@ -445,21 +304,21 @@ namespace GLTFRevitExport.GLTF {
 
                 // process face data
                 uint maxIndex = faces.Max();
-                BufferSegment faceBuffer;
+                GLTFBufferSegment faceBuffer;
                 if (maxIndex < 0xFF) {
                     var byteFaces = new List<byte>();
                     foreach (var face in faces)
                         byteFaces.Add(Convert.ToByte(face));
-                    faceBuffer = new BufferScalar1Segment(byteFaces.ToArray());
+                    faceBuffer = new GLTFBufferScalar1Segment(byteFaces.ToArray());
                 }
                 else if (maxIndex < 0xFFFF) {
                     var shortFaces = new List<ushort>();
                     foreach (var face in faces)
                         shortFaces.Add(Convert.ToUInt16(face));
-                    faceBuffer = new BufferScalar2Segment(shortFaces.ToArray());
+                    faceBuffer = new GLTFBufferScalar2Segment(shortFaces.ToArray());
                 }
                 else {
-                    faceBuffer = new BufferScalar4Segment(faces);
+                    faceBuffer = new GLTFBufferScalar4Segment(faces);
                 }
 
                 var fBuffIdx = _bufferSegments.IndexOf(faceBuffer);
@@ -544,7 +403,7 @@ namespace GLTFRevitExport.GLTF {
     #endregion
 
     #region Privates
-    internal sealed partial class GLTFBuilder {
+    sealed partial class GLTFBuilder {
         private uint AppendNodeToScene(uint idx) {
             if (PeekScene() is glTFScene scene) {
                 if (!_gltf.Nodes.IsOpen())

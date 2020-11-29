@@ -12,7 +12,7 @@ namespace GLTFRevitExport.GLTF.Schema {
     /// </summary>
     // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#scenes
     [Serializable]
-    internal class glTFScene : glTFProperty {
+    class glTFScene : glTFProperty {
         [JsonProperty("name")]
         public string Name { get; set; }
 

@@ -9,7 +9,7 @@ namespace GLTFRevitExport.GLTF.Schema {
     /// glTF Mesh Modes
     /// </summary>
     // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#primitivemode
-    internal enum glTFMeshMode {
+    enum glTFMeshMode {
         POINTS,
         LINES,
         LINE_LOOP,
@@ -22,7 +22,7 @@ namespace GLTFRevitExport.GLTF.Schema {
     /// <summary>
     /// Accessor data type identifier
     /// </summary>
-    public enum glTFAccessorType {
+    enum glTFAccessorType {
         SCALAR,
         VEC2,
         VEC3,
@@ -37,7 +37,7 @@ namespace GLTFRevitExport.GLTF.Schema {
     /// types.
     /// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#accessor-element-size
     /// </summary>
-    internal enum glTFAccessorComponentType {
+    enum glTFAccessorComponentType {
         BYTE = 5120,
         UNSIGNED_BYTE = 5121,
         SHORT = 5122,
@@ -51,7 +51,7 @@ namespace GLTFRevitExport.GLTF.Schema {
     /// array buffers.
     /// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#buffers-and-buffer-views
     /// </summary>
-    internal enum glTFBufferViewTargets {
+    enum glTFBufferViewTargets {
         ARRAY_BUFFER = 34962, // signals vertex data
         ELEMENT_ARRAY_BUFFER = 34963 // signals index or face data
     }
@@ -59,7 +59,7 @@ namespace GLTFRevitExport.GLTF.Schema {
     /// <summary>
     /// Material alpha mode
     /// </summary>
-    public enum glTFAlphaMode {
+    enum glTFAlphaMode {
         OPAQUE,
         MASK,
         BLEND

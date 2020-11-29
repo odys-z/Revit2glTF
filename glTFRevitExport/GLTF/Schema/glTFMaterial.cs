@@ -13,7 +13,7 @@ namespace GLTFRevitExport.GLTF.Schema {
     /// </summary>
     // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#materials
     [Serializable]
-    internal class glTFMaterial : glTFProperty {
+    class glTFMaterial : glTFProperty {
         [JsonProperty("name")]
         public string Name { get; set; }
 
@@ -42,7 +42,7 @@ namespace GLTFRevitExport.GLTF.Schema {
     /// </summary>
     // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#materials
     [Serializable]
-    internal class glTFPBRMetallicRoughness {
+    class glTFPBRMetallicRoughness {
         [JsonProperty("baseColorFactor")]
         public float[] BaseColorFactor { get; set; }
 

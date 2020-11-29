@@ -6,11 +6,12 @@ using Newtonsoft.Json;
 using Autodesk.Revit.DB;
 
 using GLTFRevitExport.Extensions;
+using GLTFRevitExport.GLTF.Extensions.BIM.BaseTypes;
 
 namespace GLTFRevitExport.GLTF.Extensions.BIM {
     [Serializable]
-    internal class GLTFBIMAssetExtension : GLTFBIMExtension {
-        internal GLTFBIMAssetExtension(Document d, bool includeParameters = true, GLTFBIMPropertyContainer propContainer = null) : base() {
+    class GLTFBIMAssetExtension : GLTFBIMExtension {
+        public GLTFBIMAssetExtension(Document d, bool includeParameters = true, GLTFBIMPropertyContainer propContainer = null) : base() {
             App = GetAppName(d);
             Id = GetDocumentId(d).ToString();
             Title = d.Title;

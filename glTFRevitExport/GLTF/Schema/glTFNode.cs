@@ -12,7 +12,7 @@ namespace GLTFRevitExport.GLTF.Schema {
     /// </summary>
     // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#nodes-and-hierarchy
     [Serializable]
-    internal class glTFNode: glTFProperty {
+    class glTFNode: glTFProperty {
         /// <summary>
         /// The user-defined name of this object
         /// </summary>

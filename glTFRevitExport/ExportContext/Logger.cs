@@ -3,7 +3,7 @@ using System.Diagnostics;
 using Autodesk.Revit.DB;
 
 namespace GLTFRevitExport {
-    internal class Logger {
+    class Logger {
         // private vars to control indented logging
         private const string _indentStep = "  ";
         private static int _depth = 0;
@@ -13,7 +13,7 @@ namespace GLTFRevitExport {
         /// </summary>
         /// <param name="message">Debug message</param>
         /// <param name="e">Target Element</param>
-        internal static void LogElement(string message, Element e) {
+        public static void LogElement(string message, Element e) {
 #if DEBUG
             if (e != null)
                 message +=
@@ -29,7 +29,7 @@ namespace GLTFRevitExport {
         /// Log debug message
         /// </summary>
         /// <param name="message">Debug message</param>
-        internal static void Log(string message) {
+        public static void Log(string message) {
 #if DEBUG
             // ++ or -- the level depending on the message
             if (message.StartsWith("-"))
@@ -54,6 +54,6 @@ namespace GLTFRevitExport {
         /// <summary>
         /// Reset the logger level and internal static data
         /// </summary>
-        internal static void Reset() => _depth = 0;
+        public static void Reset() => _depth = 0;
     }
 }
