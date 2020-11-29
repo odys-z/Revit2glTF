@@ -9,9 +9,7 @@ using GLTFRevitExport.Extensions;
 
 namespace GLTFRevitExport.GLTF.Extensions.BIM {
     [Serializable]
-#pragma warning disable IDE1006 // Naming Styles
     internal abstract class GLTFBIMContainer {
-#pragma warning restore IDE1006 // Naming Styles
 
         [JsonProperty("$type")]
         public abstract string Type { get; }

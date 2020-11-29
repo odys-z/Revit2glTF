@@ -10,9 +10,7 @@ using GLTFRevitExport.Extensions;
 
 namespace GLTFRevitExport.GLTF.Extensions.BIM {
     [Serializable]
-#pragma warning disable IDE1006 // Naming Styles
     internal class GLTFBIMPropertyContainer : GLTFBIMContainer {
-#pragma warning restore IDE1006 // Naming Styles
         private string _uri;
         private GLTFBIMPropertyData _propData = new GLTFBIMPropertyData();
 
@@ -40,9 +38,7 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
     }
 
     [Serializable]
-#pragma warning disable IDE1006 // Naming Styles
     internal class GLTFBIMPropertyData {
-#pragma warning restore IDE1006 // Naming Styles
         [JsonProperty("records", Order = 1)]
         public Dictionary<string, HashSet<uint>> Records { get; set; } = new Dictionary<string, HashSet<uint>>();
 

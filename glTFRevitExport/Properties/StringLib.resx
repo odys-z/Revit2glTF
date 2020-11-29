@@ -148,7 +148,7 @@
     <value>Exporting non-3d views are not supported in this Revit version</value>
   </data>
   <data name="SceneRootNodeName" xml:space="preserve">
-    <value>{0} Root</value>
+    <value>{0}</value>
   </data>
   <data name="VertexFaceIsRequired" xml:space="preserve">
     <value>Vertex and Face info is required</value>

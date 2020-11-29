@@ -151,7 +151,7 @@ namespace GLTFRevitExport.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to {0} Root.
+        ///   Looks up a localized string similar to {0}.
         /// </summary>
         internal static string SceneRootNodeName {
             get {

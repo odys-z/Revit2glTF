@@ -16,9 +16,7 @@ using System.Runtime.Serialization;
 
 namespace GLTFRevitExport.GLTF.Extensions.BIM {
     [Serializable]
-#pragma warning disable IDE1006 // Naming Styles
     internal abstract class GLTFBIMPropertyExtension : GLTFBIMExtension {
-#pragma warning restore IDE1006 // Naming Styles
         private const string _revitPrefix = "Revit";
 
         private readonly BuiltInParameter[] excludeBuiltinParams =
