@@ -570,7 +570,6 @@ namespace GLTFRevitExport.ExportContext {
             var passResults = new Stack<bool>();
             BuildContext currentCtx = mainCtx;
             BuildContext activeLinkCtx = null;
-            string linkId = null;
             foreach (var action in _actions) {
                 action.AssetExt = currentCtx.AssetExtension;
 
@@ -582,8 +581,7 @@ namespace GLTFRevitExport.ExportContext {
 
                 if (!_cfgs.EmbedLinkedModels) {
                     if (action is LinkBeginAction linkBeg) {
-                        linkId = Guid.NewGuid().ToString().ToLower();
-                        linkBeg.Uri = $"{linkId}.gltf";
+                        linkBeg.Uri = $"{linkBeg.LinkId}.gltf";
                     }
                     else if (action is LinkEndAction) {
                         // close the link
@@ -591,7 +589,6 @@ namespace GLTFRevitExport.ExportContext {
                         buildContexts.Add(activeLinkCtx);
                         // switch to main builder
                         activeLinkCtx = null;
-                        linkId = null;
                         currentCtx = mainCtx;
                     }
                 }
@@ -629,10 +626,10 @@ namespace GLTFRevitExport.ExportContext {
                 // use this link builder for the rest of actions
                 // that happen inside the link
                 if (!_cfgs.EmbedLinkedModels)
-                    if (action is LinkBeginAction linkBeg && linkId != null) {
+                    if (action is LinkBeginAction linkBeg) {
                         // create a new glTF for this link
                         activeLinkCtx = new BuildContext(
-                            name: linkId,
+                            name: linkBeg.LinkId,
                             doc: linkBeg.LinkDocument,
                             exportCfgs: _cfgs,
                             extrasBuilder: extrasBuilder
