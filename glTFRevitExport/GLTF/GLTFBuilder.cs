@@ -15,6 +15,8 @@ using System.Text.RegularExpressions;
 namespace GLTFRevitExport.GLTF {
     #region Initialization, Completion
     internal sealed partial class GLTFBuilder {
+        public string Name { get; set; } = "model";
+
         internal GLTFBuilder() {
             _gltf = new glTF();
         }
@@ -84,11 +86,11 @@ namespace GLTFRevitExport.GLTF {
 
                 var buffer = new glTFBuffer {
                     ByteLength = (uint)bufferBytes.Count,
-                    Uri = "buffer.bin"
+                    Uri = $"{Name}.bin"
                 };
                 _gltf.Buffers.Add(buffer);
 
-                bundleItems.Add(new GLTFPackageBinaryItem("buffer.bin", bufferBytes.ToArray()));
+                bundleItems.Add(new GLTFPackageBinaryItem($"{Name}.bin", bufferBytes.ToArray()));
             }
             else {
                 // TODO: multiple binaries
@@ -96,8 +98,8 @@ namespace GLTFRevitExport.GLTF {
 
             // store snapshot of collected data into a gltf structure
             var model = new GLTFPackageModelItem(
-                "model.gltf",
-                JsonConvert.SerializeObject(
+                name: $"{Name}.gltf",
+                modelData: JsonConvert.SerializeObject(
                     _gltf,
                     new JsonSerializerSettings {
                         NullValueHandling = NullValueHandling.Ignore

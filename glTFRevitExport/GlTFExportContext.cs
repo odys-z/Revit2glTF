@@ -18,9 +18,9 @@ using Autodesk.Revit.DB.Architecture;
 namespace GLTFRevitExport {
     #region Initialization
     internal sealed partial class GLTFExportContext : IExportContext {
-        public GLTFExportContext(Document doc, GLTFExportConfigs configs = null) {
+        public GLTFExportContext(Document doc, GLTFExportConfigs exportConfigs = null) {
             // ensure base configs
-            _cfgs = configs is null ? new GLTFExportConfigs() : configs;
+            _cfgs = exportConfigs is null ? new GLTFExportConfigs() : exportConfigs;
 
             // reset stacks
             ResetExporter();
@@ -36,11 +36,6 @@ namespace GLTFRevitExport {
         /// Configurations for the active export
         /// </summary>
         private readonly GLTFExportConfigs _cfgs = new GLTFExportConfigs();
-
-        /// <summary>
-        /// Property value container when property information is not embedded
-        /// </summary>
-        private GLTFBIMPropertyContainer _propContainer;
 
         /// <summary>
         /// Document stack to hold the documents being processed.
@@ -361,14 +356,21 @@ namespace GLTFRevitExport {
                     case View _:
                         goto SkipElementLabel;
 
+                    case Level levelInst:
+                        Logger.LogElement("> level", levelInst);
+                        _actions.Enqueue(
+                            new OnLevelAction(level: levelInst)
+                            );
+                        goto SkipElementLabel;
+
                     case RevitLinkInstance linkInst:
                         if (_cfgs.ExportLinkedModels) {
                             Logger.LogElement("+ element (link) begin", e);
                             _actions.Enqueue(
-                                new OnNodeBeginAction(
-                                    element: e,
-                                    type: et,
-                                    link: true
+                                new OnLinkBeginAction(
+                                    link: linkInst,
+                                    linkType: (RevitLinkType)et,
+                                    linkedDoc: linkInst.GetLinkDocument()
                                     )
                                 );
                             break;
@@ -381,10 +383,7 @@ namespace GLTFRevitExport {
                     case FamilyInstance famInst:
                         Logger.LogElement("+ element (instance) begin", e);
                         _actions.Enqueue(
-                            new OnNodeBeginAction(
-                                element: famInst,
-                                type: et
-                                )
+                            new OnNodeBeginAction(element: famInst, type: et)
                             );
                         break;
 
@@ -453,9 +452,15 @@ namespace GLTFRevitExport {
                 }
                 _partStack.Clear();
 
-                Logger.Log("- element end");
                 // end the element
-                _actions.Enqueue(new OnNodeEndAction());
+                Logger.Log("- element end");
+                if (_docStack.Peek() is Document doc) {
+                    Element e = doc.GetElement(eid);
+                    if (e is RevitLinkInstance)
+                        _actions.Enqueue(new OnLinkEndAction());
+                    else
+                        _actions.Enqueue(new OnNodeEndAction());
+                }
             }
         }
 
@@ -869,14 +874,60 @@ namespace GLTFRevitExport {
             }
         }
 
+        class OnLevelAction : ExporterBeginAction {
+            public OnLevelAction(Level level) : base(level) {}
+
+            public override void Execute(GLTFBuilder gltf,
+                                         GLTFExportConfigs cfg,
+                                         Func<object, string[]> zoneFinder,
+                                         Func<object, glTFExtras> extrasBuilder) {
+                Logger.Log("> level");
+                
+                Level level = (Level)element;
+                
+                // make a matrix from level elevation
+                float elev = level.Elevation.ToGLTFLength();
+                float[] elevMatrix = null;
+                if (elev != 0f) {
+                    elevMatrix = new float[16] {
+                                1f,   0f,   0f,   0f,
+                                0f,   1f,   0f,   0f,
+                                0f,   0f,   1f,   0f,
+                                0f,   elev, 0f,   1f
+                            };
+                }
+
+                // create level node
+                var levelNodeIdx = gltf.OpenNode(
+                    name: level.Name,
+                    matrix: elevMatrix,
+                    exts: new glTFExtension[] {
+                            new GLTFBIMNodeExtension(level, null, IncludeProperties, PropertyContainer)
+                    },
+                    extras: extrasBuilder(level)
+                );
+
+                gltf.CloseNode();
+
+                // record the level in asset
+                if (AssetExt != null) {
+                    if (AssetExt.Levels is null)
+                        AssetExt.Levels = new List<uint>();
+                    AssetExt.Levels.Add(levelNodeIdx);
+                }
+
+                // not need to do anything else
+                return;
+            }
+        }
+
         class OnNodeBeginAction : ExporterBeginAction {
-            private readonly bool _link;
             private readonly ElementType _elementType;
 
-            public OnNodeBeginAction(Element element, ElementType type, bool link = false)
-                : base(element) {
+            public string Uri { get; set; } = null;
+
+            public OnNodeBeginAction(Element element, ElementType type) : base(element) {
                 _elementType = type;
-                _link = link;
             }
 
             public override void Execute(GLTFBuilder gltf,
@@ -897,45 +948,6 @@ namespace GLTFRevitExport {
                     return false;
                 }
 
-                // process special cases
-                switch (element) {
-                    case Level level:
-                        // make a matrix from level elevation
-                        float elev = level.Elevation.ToGLTFLength();
-                        float[] elevMatrix = null;
-                        if (elev != 0f) {
-                            elevMatrix = new float[16] {
-                                1f,   0f,   0f,   0f,
-                                0f,   1f,   0f,   0f,
-                                0f,   0f,   1f,   0f,
-                                0f,   elev, 0f,   1f
-                            };
-                        }
-
-                        // create level node
-                        var levelNodeIdx = gltf.OpenNode(
-                            name: level.Name,
-                            matrix: elevMatrix,
-                            exts: new glTFExtension[] {
-                            new GLTFBIMNodeExtension(level, null, IncludeProperties, PropertyContainer)
-                            },
-                            extras: extrasBuilder(level)
-                        );
-                        
-                        // record the level in asset
-                        if (AssetExt != null) {
-                            if (AssetExt.Levels is null)
-                                AssetExt.Levels = new List<uint>();
-                            AssetExt.Levels.Add(levelNodeIdx);
-                        }
-                        
-                        // not need to do anything else
-                        return;
-
-                    default:
-                        break;
-                }
-
                 // create a node for its type
                 // attemp at finding previously created node for this type
                 // but only search children of already open node
@@ -948,12 +960,17 @@ namespace GLTFRevitExport {
                     }
                     // otherwise create and open a new node for this type
                     else {
+                        var bimExt = new GLTFBIMNodeExtension(
+                            e: _elementType,
+                            zoneFinder: null,
+                            includeParameters: IncludeProperties,
+                            propContainer: PropertyContainer
+                        );
+
                         gltf.OpenNode(
                             name: _elementType.Name,
                             matrix: null,
-                            exts: new glTFExtension[] {
-                                new GLTFBIMNodeExtension(_elementType, null, IncludeProperties, PropertyContainer)
-                            },
+                            exts: new glTFExtension[] { bimExt },
                             extras: extrasBuilder(_elementType)
                         );
                     }
@@ -970,12 +987,18 @@ namespace GLTFRevitExport {
                 }
                 // otherwise create and open a new node for this type
                 else {
+                    var bimExt = new GLTFBIMNodeExtension(
+                        e: element,
+                        zoneFinder: zoneFinder,
+                        includeParameters: IncludeProperties,
+                        propContainer: PropertyContainer
+                    );
+                    bimExt.Uri = Uri;
+                    
                     var newNodeIdx = gltf.OpenNode(
                         name: element.Name,
                         matrix: null,
-                        exts: new glTFExtension[] {
-                            new GLTFBIMNodeExtension(element, zoneFinder, IncludeProperties, PropertyContainer)
-                        },
+                        exts: new glTFExtension[] { bimExt },
                         extras: extrasBuilder(element)
                     );
 
@@ -1017,6 +1040,18 @@ namespace GLTFRevitExport {
                 if (IncludeHierarchy)
                     gltf.CloseNode();
             }
+        }
+
+        class OnLinkBeginAction : OnNodeBeginAction {
+            public Document LinkDocument { get; private set; }
+            
+            public OnLinkBeginAction(RevitLinkInstance link, RevitLinkType linkType, Document linkedDoc)
+                : base(link, linkType) {
+                LinkDocument = linkedDoc;
+            }
+        }
+
+        class OnLinkEndAction : OnNodeEndAction {
         }
 
         class OnTransformAction : BaseExporterAction {
@@ -1165,40 +1200,63 @@ namespace GLTFRevitExport {
             _processed.Clear();
             _skipElement = false;
         }
+        
+        class BuildContext {
+            public GLTFBuilder Builder { get; private set; }
+            public GLTFBIMAssetExtension AssetExtension { get; private set; }
+            public GLTFBIMPropertyContainer PropertyContainer { get; private set; }
 
-        internal string Properties {
-            get {
-                if (_propContainer is null)
-                    return null;
-                else
-                    return _propContainer.Pack();
+            public BuildContext(string name, Document doc, GLTFExportConfigs exportCfgs, Func<object, glTFExtras> extrasBuilder) {
+                // create main gltf builder
+                Builder = new GLTFBuilder() { Name = name };
+
+                // build asset extension and property source (if needed)
+                if (exportCfgs.EmbedParameters)
+                    AssetExtension = new GLTFBIMAssetExtension(doc, exportCfgs.ExportParameters);
+                else {
+                    PropertyContainer = new GLTFBIMPropertyContainer($"{Builder.Name}-properties.json");
+                    AssetExtension = new GLTFBIMAssetExtension(doc, exportCfgs.ExportParameters, PropertyContainer);
+                }
+
+                Builder.SetAsset(
+                    generatorId: exportCfgs.GeneratorId,
+                    copyright: exportCfgs.CopyrightMessage,
+                    exts: new glTFExtension[] { AssetExtension },
+                    extras: extrasBuilder != null ? extrasBuilder(doc) : null
+                );
+            }
+        
+            public List<GLTFPackageItem> Pack(GLTFBuildConfigs configs) {
+                var gltfPack = new List<GLTFPackageItem>();
+                
+                // pack the glTF data and get the container
+                gltfPack.AddRange(
+                    Builder.Pack(singleBinary: configs.UseSingleBinary)
+                );
+
+                if (PropertyContainer != null)
+                    gltfPack.Add(
+                        new GLTFPackageJsonItem(PropertyContainer.Uri, PropertyContainer.Pack())
+                    );
+
+                return gltfPack;
             }
         }
-        
-        internal GLTFBuilder Build(ElementFilter filter,
-                                   Func<object, string[]> zoneFinder,
-                                   Func<object, glTFExtras> extrasBuilder) {
-            var glTF = new GLTFBuilder();
 
+        internal List<GLTFPackageItem> Build(ElementFilter filter,
+                                             Func<object, string[]> zoneFinder,
+                                             Func<object, glTFExtras> extrasBuilder,
+                                             GLTFBuildConfigs buildConfigs = null) {
+            // ensure configs
+            buildConfigs = buildConfigs ?? new GLTFBuildConfigs();
+            
             // build asset info
             var doc = _docStack.Last();
 
-            // build asset extension and property source (if needed)
-            GLTFBIMAssetExtension assetExt;
-            _propContainer = new GLTFBIMPropertyContainer("properties.json");
-            if(_cfgs.EmbedParameters)
-                assetExt = new GLTFBIMAssetExtension(doc, _cfgs.ExportParameters);
-            else {
-                assetExt = new GLTFBIMAssetExtension(doc, _cfgs.ExportParameters, _propContainer);
-            }
+            // create main gltf builder
+            var mainCtx = new BuildContext("model", doc, _cfgs, extrasBuilder);
+            var buildContexts = new List<BuildContext> { mainCtx };
 
-            glTF.SetAsset(
-                generatorId: _cfgs.GeneratorId,
-                copyright: _cfgs.CopyrightMessage,
-                exts: new glTFExtension[] { assetExt },
-                extras: extrasBuilder != null ? extrasBuilder(doc) : null
-            );
-            
             // combine default filter with build filter
             ElementFilter actionFilter = null;
             if (filter != null) {
@@ -1225,29 +1283,48 @@ namespace GLTFRevitExport {
             // and needs to remember the result of the filter test
             // so it knows whether to run the corresponding END action or not
             var passResults = new Stack<bool>();
+            BuildContext currentCtx = mainCtx;
+            BuildContext activeLinkCtx = null;
+            string linkId = null;
             foreach (var action in _actions) {
-                action.AssetExt = assetExt;
+                action.AssetExt = currentCtx.AssetExtension;
                 
                 action.IncludeHierarchy = _cfgs.ExportHierarchy;
                 action.IncludeProperties = _cfgs.ExportParameters;
                 // set the property source for the action if needed
                 if (!_cfgs.EmbedParameters)
-                    action.PropertyContainer = _propContainer;
+                    action.PropertyContainer = currentCtx.PropertyContainer;
+
+                if (!_cfgs.EmbedLinkedModels) {
+                    if (action is OnLinkBeginAction linkBeg) {
+                        linkId = Guid.NewGuid().ToString().ToLower();                        
+                        linkBeg.Uri = $"{linkId}.gltf";
+                    }
+                    else if (action is OnLinkEndAction) {
+                        // close the link
+                        activeLinkCtx.Builder.CloseScene();
+                        buildContexts.Add(activeLinkCtx);
+                        // switch to main builder
+                        activeLinkCtx = null;
+                        linkId = null;
+                        currentCtx = mainCtx;
+                    }
+                }
 
                 switch (action) {
                     case ExporterBeginAction beg:
                         if (actionFilter is null) {
                             if (extrasBuilder != null)
-                                beg.Execute(glTF, _cfgs, zoneFinder, extrasBuilder);
+                                beg.Execute(currentCtx.Builder, _cfgs, zoneFinder, extrasBuilder);
                             else
-                                beg.Execute(glTF, _cfgs);
+                                beg.Execute(currentCtx.Builder, _cfgs);
                             passResults.Push(true);
                         }
                         else if (beg.Passes(actionFilter)) {
                             if (extrasBuilder != null)
-                                beg.Execute(glTF, _cfgs, zoneFinder, extrasBuilder);
+                                beg.Execute(currentCtx.Builder, _cfgs, zoneFinder, extrasBuilder);
                             else
-                                beg.Execute(glTF, _cfgs);
+                                beg.Execute(currentCtx.Builder, _cfgs);
                             passResults.Push(true);
                         }
                         else
@@ -1256,18 +1333,46 @@ namespace GLTFRevitExport {
 
                     case ExporterEndAction end:
                         if (passResults.Pop())
-                            end.Execute(glTF, _cfgs);
+                            end.Execute(currentCtx.Builder, _cfgs);
                         break;
 
                     case BaseExporterAction ea:
-                        ea.Execute(glTF, _cfgs);
+                        ea.Execute(currentCtx.Builder, _cfgs);
                         break;
                 }
+
+                // use this link builder for the rest of actions
+                // that happen inside the link
+                if (!_cfgs.EmbedLinkedModels)
+                    if (action is OnLinkBeginAction linkBeg && linkId != null) {
+                        // create a new glTF for this link
+                        activeLinkCtx = new BuildContext(
+                            name: linkId,
+                            doc: linkBeg.LinkDocument,
+                            exportCfgs: _cfgs,
+                            extrasBuilder: extrasBuilder
+                        );
+
+                        activeLinkCtx.Builder.OpenScene(name: "default", exts: null, extras: null);
+
+                        // use this builder for all subsequent elements
+                        currentCtx = activeLinkCtx;
+                    }
             }
 
             Logger.Log("- end build");
 
-            return glTF;
+            Logger.Log("+ start pack");
+
+            // prepare pack
+            var gltfPack = new List<GLTFPackageItem>();
+
+            foreach (var buildCtx in buildContexts)
+                gltfPack.AddRange(buildCtx.Pack(buildConfigs));
+
+            Logger.Log("- end pack");
+
+            return gltfPack;
         }
     }
 #endregion

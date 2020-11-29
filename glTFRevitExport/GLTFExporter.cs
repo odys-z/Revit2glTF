@@ -36,24 +36,6 @@ namespace GLTFRevitExport {
                                               Func<object, string[]> zoneFinder = null,
                                               Func<object, glTFExtras> extrasBuilder = null,
                                               GLTFBuildConfigs configs = null)
-        {
-            // ensure configs
-            configs = configs ?? new GLTFBuildConfigs();
-
-            // build the glTF
-            var glTF = _ctx.Build(filter, zoneFinder, extrasBuilder);
-            // pack the glTF data and get the container
-            var gltfPack = glTF.Pack(
-                singleBinary: configs.UseSingleBinary
-            );
-
-            if (_ctx.Properties is string propData) {
-                gltfPack.Add(
-                    new GLTFPackageJsonItem("properties.json", propData)
-                    );
-            }
-
-            return gltfPack;
-        }
+            => _ctx.Build(filter, zoneFinder, extrasBuilder, configs);
     }
 }

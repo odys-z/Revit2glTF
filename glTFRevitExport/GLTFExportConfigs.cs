@@ -20,14 +20,19 @@ namespace GLTFRevitExport {
         public string CopyrightMessage;
 
         /// <summary>
+        /// Export Revit type data
+        /// </summary>
+        public bool ExportHierarchy { get; set; } = true;
+
+        /// <summary>
         /// Export linked Revit models
         /// </summary>
         public bool ExportLinkedModels { get; set; } = true;
 
         /// <summary>
-        /// Export Revit type data
+        /// Embed linked Revit models
         /// </summary>
-        public bool ExportHierarchy { get; set; } = true;
+        public bool EmbedLinkedModels { get; set; } = true;
 
         /// <summary>
         /// Export Revit element parameter data
