@@ -79,8 +79,9 @@ namespace GLTFRevitExport.ExportContext.BuildActions {
                     zoneFinder: zoneFinder,
                     includeParameters: IncludeProperties,
                     propContainer: PropertyContainer
-                );
-                bimExt.Uri = Uri;
+                ) {
+                    Uri = Uri
+                };
 
                 var newNodeIdx = gltf.OpenNode(
                     name: element.Name,

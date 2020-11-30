@@ -6,8 +6,9 @@ namespace GLTFRevitExport {
     class Logger {
         // private vars to control indented logging
         private const string _indentStep = "  ";
+#if DEBUG
         private static int _depth = 0;
-
+#endif
         /// <summary>
         /// Log debug message with element info
         /// </summary>
@@ -54,6 +55,10 @@ namespace GLTFRevitExport {
         /// <summary>
         /// Reset the logger level and internal static data
         /// </summary>
-        public static void Reset() => _depth = 0;
+        public static void Reset() {
+#if DEBUG
+            _depth = 0;
+#endif
+        }
     }
 }
