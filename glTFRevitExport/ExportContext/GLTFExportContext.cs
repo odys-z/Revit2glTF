@@ -583,14 +583,25 @@ namespace GLTFRevitExport.ExportContext {
                     if (action is LinkBeginAction linkBeg) {
                         linkBeg.Uri = $"{linkBeg.LinkId}.gltf";
                     }
-                    else if (action is LinkEndAction) {
-                        // close the link
-                        activeLinkCtx.Builder.CloseScene();
-                        buildContexts.Add(activeLinkCtx);
-                        // switch to main builder
-                        activeLinkCtx = null;
-                        currentCtx = mainCtx;
-                    }
+                    else if (activeLinkCtx != null)
+                        // Note:
+                        // LinkEndAction should be always preceded by ElementTransformAction
+                        // switch to main builder. We need to switch to main builder on 
+                        // ElementTransformAction to apply the correct transform
+                        // to the link instance node in the main builder
+                        if (action is ElementTransformAction) {
+                            // switch to main builder
+                            currentCtx = mainCtx;
+                        }
+                        // close the link builder
+                        else if (action is LinkEndAction) {
+                            // close the link
+                            activeLinkCtx.Builder.CloseScene();
+                            buildContexts.Add(activeLinkCtx);
+                            // switch to main builder
+                            activeLinkCtx = null;
+                            currentCtx = mainCtx;
+                        }
                 }
 
                 switch (action) {
