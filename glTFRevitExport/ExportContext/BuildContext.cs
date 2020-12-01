@@ -42,7 +42,7 @@ namespace GLTFRevitExport.ExportContext {
                 Builder.Pack(singleBinary: configs.UseSingleBinary)
             );
 
-            if (PropertyContainer != null)
+            if (PropertyContainer != null && PropertyContainer.HasPropertyData)
                 gltfPack.Add(
                     new GLTFPackageJsonItem(PropertyContainer.Uri, PropertyContainer.Pack())
                 );
