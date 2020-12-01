@@ -14,4 +14,8 @@ namespace GLTFRevitExport.ExportContext.BuildActions {
 
     class LinkEndAction : ElementEndAction {
     }
+
+    class LinkTransformAction : ElementTransformAction {
+        public LinkTransformAction(float[] xform) : base(xform) { }
+    }
 }

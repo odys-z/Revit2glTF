@@ -369,7 +369,7 @@ namespace GLTFRevitExport.ExportContext {
                 if (_cfgs.ExportLinkedModels) {
                     Logger.Log("> transform (link)");
                     float[] xform = node.GetTransform().ToGLTF();
-                    _actions.Enqueue(new ElementTransformAction(xform));
+                    _actions.Enqueue(new LinkTransformAction(xform));
 
                     Logger.Log("- link document end");
                     _docStack.Pop();
@@ -589,7 +589,7 @@ namespace GLTFRevitExport.ExportContext {
                         // switch to main builder. We need to switch to main builder on 
                         // ElementTransformAction to apply the correct transform
                         // to the link instance node in the main builder
-                        if (action is ElementTransformAction) {
+                        if (action is LinkTransformAction) {
                             // switch to main builder
                             currentCtx = mainCtx;
                         }
