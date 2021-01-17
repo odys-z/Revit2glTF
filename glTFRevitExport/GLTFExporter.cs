@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Windows;
 
 using Autodesk.Revit.DB;
 
@@ -16,6 +17,21 @@ namespace GLTFRevitExport {
             => _ctx = new GLTFExportContext(doc, configs ?? new GLTFExportConfigs());
 
         public void ExportView(View view, ElementFilter filter = null) {
+
+            // make sure view is ready for export
+            var levelsCat = view.Document.Settings.Categories.get_Item(BuiltInCategory.OST_Levels);
+            if (view.GetCategoryHidden(levelsCat.Id))
+                throw new Exception("Levels are hidden in this view.");
+
+            //// make necessary view adjustments
+            //if (view.CanUseTemporaryVisibilityModes()) {
+            //    // make sure levels are visible
+            //    view.EnableTemporaryViewPropertiesMode(view.Id);
+            //    var levelsCat = view.Document.Settings.Categories.get_Item(BuiltInCategory.OST_Levels);
+            //    view.SetCategoryHidden(levelsCat.Id, false);
+            //}
+
+
             var exp = new CustomExporter(view.Document, _ctx) {
                 ShouldStopOnError = true
             };
@@ -28,8 +44,12 @@ namespace GLTFRevitExport {
 #else
             // export View3D was deprecated in Revit 2020 and above
             exp.Export(view);
+
             // TODO: handle cancel
 #endif
+
+            //// reset visibility changes
+            //view.DisableTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate);
         }
 
         public List<GLTFPackageItem> BuildGLTF(ElementFilter filter = null,

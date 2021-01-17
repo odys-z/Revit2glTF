@@ -167,11 +167,13 @@ namespace GLTFRevitExport.ExportContext {
 
                     // add an action to the queue that collects the elements
                     // not collected by the IExporter
+                    QueueLevelActions(doc, view);
+                    QueueGridActions(doc);
                     QueuePartFromElementActions(
+                        doc,
                         view,
                         new ElementClassFilter(typeof(TopographySurface))
                         );
-                    QueueGridActions(doc);
 
                     Logger.LogElement("+ view begin", view);
                     return RenderNodeAction.Proceed;
@@ -181,12 +183,20 @@ namespace GLTFRevitExport.ExportContext {
             return RenderNodeAction.Skip;
         }
 
-        private void QueuePartFromElementActions(View view, ElementFilter filter) {
-            foreach (var e in new FilteredElementCollector(view.Document, view.Id).WherePasses(filter))
-                _actions.Enqueue(new PartFromElementAction(view: view, element: e));
+        private void QueueLevelActions(Document doc, View view) {
+            Logger.Log("> collecting levels");
+
+            // collect levels from project or view only?
+            foreach (var e in new FilteredElementCollector(doc, view.Id)
+                                  .OfCategory(BuiltInCategory.OST_Levels)
+                                  .WhereElementIsNotElementType())
+                _actions.Enqueue(
+                    new LevelAction(element: e, extents: e.get_BoundingBox(view))
+                    );
         }
 
         private void QueueGridActions(Document doc) {
+            Logger.Log("> collecting grids");
             // first collect the multisegment grids and record their children
             var childGrids = new HashSet<ElementId>();
             foreach (var e in new FilteredElementCollector(doc).OfClass(typeof(MultiSegmentGrid)).WhereElementIsNotElementType()) {
@@ -200,6 +210,11 @@ namespace GLTFRevitExport.ExportContext {
             foreach (var e in new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Grids).WhereElementIsNotElementType())
                 if (!childGrids.Contains(e.Id))
                     _actions.Enqueue(new GridAction(element: e));
+        }
+
+        private void QueuePartFromElementActions(Document doc, View view, ElementFilter filter) {
+            foreach (var e in new FilteredElementCollector(view.Document, view.Id).WherePasses(filter))
+                _actions.Enqueue(new PartFromElementAction(view: view, element: e));
         }
 
         public void OnViewEnd(ElementId elementId) {
@@ -241,13 +256,6 @@ namespace GLTFRevitExport.ExportContext {
                 // Begin: Element
                 switch (e) {
                     case View _:
-                        goto SkipElementLabel;
-
-                    case Level levelInst:
-                        Logger.LogElement("> level", levelInst);
-                        _actions.Enqueue(
-                            new LevelAction(element: levelInst, extents: levelInst.get_BoundingBox(_viewStack.Peek()))
-                            );
                         goto SkipElementLabel;
 
                     case RevitLinkInstance linkInst:
