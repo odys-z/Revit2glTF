@@ -41,14 +41,8 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM.BaseTypes {
             // identity data
             Id = e.GetId();
             Taxonomies = GetTaxonomies(e);
-            // TODO: get correct uniformat category
-            Classes.Add(
-                $"uniformat/{GetParamValue(e, BuiltInParameter.UNIFORMAT_CODE)}".UriEncode()
-                );
-            Classes.Add(
-                $"omniclass/{GetParamValue(e, BuiltInParameter.OMNICLASS_CODE)}".UriEncode()
-                );
-
+            Classes = GetClasses(e);
+            
             // include parameters
             if (includeParameters) {
                 if (propContainer is null)
@@ -105,6 +99,21 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM.BaseTypes {
             }
             // instances show various containers that include them (horizontal)
             else {
+                // Element category
+                string categoryName = e.Category != null ? e.Category.Name : e.ToString();
+
+                if (e.Document.GetElement(e.GetTypeId()) is ElementType etype) {
+                    string familyName = etype.FamilyName;
+                    taxonomies.Add(
+                        $"{_revitPrefix}/Categories/{categoryName}/{familyName}".UriEncode()
+                    );
+                }
+                else {
+                    taxonomies.Add(
+                        $"{_revitPrefix}/Categories/{categoryName}".UriEncode()
+                    );
+                }
+
                 // NOTE: Subcategories are another container but they are applied
                 // to sub-elements in external families only
                 // Phases
@@ -147,6 +156,28 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM.BaseTypes {
             }
 
             return taxonomies;
+        }
+
+        private List<string> GetClasses(Element e) {
+            var classes = new List<string>();
+            // TODO: get correct uniformat category
+            classes.Add(
+                $"uniformat/{GetParamValue(e, BuiltInParameter.UNIFORMAT_CODE)}".UriEncode()
+                );
+            classes.Add(
+                $"omniclass/{GetParamValue(e, BuiltInParameter.OMNICLASS_CODE)}".UriEncode()
+                );
+
+            // TODO: get classed from various industry standards e.g. IFC
+            switch (e) {
+                case Level level:
+                    classes.Add("ifc4/IfcBuildingStorey"); break;
+                case Grid grid:
+                case MultiSegmentGrid multiGrid:
+                    classes.Add("ifc4/IfcGrid"); break;
+            }
+
+            return classes;
         }
 
         /// <summary>

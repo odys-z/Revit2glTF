@@ -49,6 +49,14 @@ namespace GLTFRevitExport.ExportContext {
         private readonly Stack<Document> _docStack = new Stack<Document>();
 
         /// <summary>
+        /// View stack to hold the view being processed.
+        /// A stack is used to allow referencing view when needed.
+        /// It is not expected for this stack to hold more than one view,
+        /// however stack has been used for consistency
+        /// </summary>
+        private readonly Stack<View> _viewStack = new Stack<View>();
+
+        /// <summary>
         /// Queue of actions collected during export. These actions are then
         /// played back on each .Build call to create separate glTF outputs
         /// </summary>
@@ -155,13 +163,15 @@ namespace GLTFRevitExport.ExportContext {
 
                     // if active doc and view is valid
                     _actions.Enqueue(new SceneBeginAction(view: view));
+                    _viewStack.Push(view);
 
                     // add an action to the queue that collects the elements
                     // not collected by the IExporter
-                    QueueMeshGeometryActions(
+                    QueuePartFromElementActions(
                         view,
                         new ElementClassFilter(typeof(TopographySurface))
                         );
+                    QueueGridActions(doc);
 
                     Logger.LogElement("+ view begin", view);
                     return RenderNodeAction.Proceed;
@@ -171,9 +181,25 @@ namespace GLTFRevitExport.ExportContext {
             return RenderNodeAction.Skip;
         }
 
-        private void QueueMeshGeometryActions(View view, ElementFilter filter) {
+        private void QueuePartFromElementActions(View view, ElementFilter filter) {
             foreach (var e in new FilteredElementCollector(view.Document, view.Id).WherePasses(filter))
                 _actions.Enqueue(new PartFromElementAction(view: view, element: e));
+        }
+
+        private void QueueGridActions(Document doc) {
+            // first collect the multisegment grids and record their children
+            var childGrids = new HashSet<ElementId>();
+            foreach (var e in new FilteredElementCollector(doc).OfClass(typeof(MultiSegmentGrid)).WhereElementIsNotElementType()) {
+                if (e is MultiSegmentGrid multiGrid) {
+                    childGrids.UnionWith(multiGrid.GetGridIds());
+                    _actions.Enqueue(new MultiSegmentGridAction(element: e));
+                }
+            }
+
+            // then record the rest of the grids and omit the already recorded ones
+            foreach (var e in new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Grids).WhereElementIsNotElementType())
+                if (!childGrids.Contains(e.Id))
+                    _actions.Enqueue(new GridAction(element: e));
         }
 
         public void OnViewEnd(ElementId elementId) {
@@ -182,6 +208,7 @@ namespace GLTFRevitExport.ExportContext {
             else {
                 Logger.Log("- view end");
                 _actions.Enqueue(new SceneEndAction());
+                _viewStack.Pop();
             }
         }
         #endregion
@@ -219,7 +246,7 @@ namespace GLTFRevitExport.ExportContext {
                     case Level levelInst:
                         Logger.LogElement("> level", levelInst);
                         _actions.Enqueue(
-                            new LevelAction(level: levelInst)
+                            new LevelAction(element: levelInst, extents: levelInst.get_BoundingBox(_viewStack.Peek()))
                             );
                         goto SkipElementLabel;
 
