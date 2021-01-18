@@ -84,6 +84,7 @@ namespace GLTFRevitExport.ExportContext.BuildActions {
         }
     }
 
+    // TODO: remove support for non-linear grids
     class MultiSegmentGridAction : BuildBeginAction {
         public MultiSegmentGridAction(Element element) : base(element) { }
 
