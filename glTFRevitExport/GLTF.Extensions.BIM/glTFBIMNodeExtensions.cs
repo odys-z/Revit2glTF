@@ -42,6 +42,11 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
             Max = new GLTFBIMVector(bbox.Max);
         }
 
+        public GLTFBIMBounds(XYZ min, XYZ max) {
+            Min = new GLTFBIMVector(min);
+            Max = new GLTFBIMVector(max);
+        }
+
         public GLTFBIMBounds(float minx, float miny, float minz,
                              float maxx, float maxy, float maxz) {
             Min = new GLTFBIMVector(minx, miny, minz);

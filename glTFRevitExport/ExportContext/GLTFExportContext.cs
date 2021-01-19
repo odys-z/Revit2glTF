@@ -225,12 +225,14 @@ namespace GLTFRevitExport.ExportContext {
 
         private void QueueGridActions(Document doc) {
             Logger.Log("> collecting grids");
+            
             // first collect the multisegment grids and record their children
+            // multi-segment grids are not supported and the segments will not
+            // be procesed as grids
             var childGrids = new HashSet<ElementId>();
             foreach (var e in new FilteredElementCollector(doc).OfClass(typeof(MultiSegmentGrid)).WhereElementIsNotElementType()) {
                 if (e is MultiSegmentGrid multiGrid) {
                     childGrids.UnionWith(multiGrid.GetGridIds());
-                    _actions.Enqueue(new MultiSegmentGridAction(element: e));
                 }
             }
 
