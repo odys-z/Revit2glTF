@@ -83,46 +83,7 @@ namespace GLTFRevitExport.ExportContext.BuildActions {
             return;
         }
     }
-
-    // TODO: remove support for non-linear grids
-    class MultiSegmentGridAction : BuildBeginAction {
-        public MultiSegmentGridAction(Element element) : base(element) { }
-
-        public override void Execute(GLTFBuilder gltf,
-                                     GLTFExportConfigs cfg,
-                                     Func<object, string[]> zoneFinder,
-                                     Func<object, glTFExtras> extrasBuilder) {
-            Logger.Log("> multi-segment grid");
-
-            MultiSegmentGrid grid = (MultiSegmentGrid)element;
-
-            // TODO: make a matrix from grid
-            float[] gridMatrix = null;
-
-            // create level node
-            var gridNodeIdx = gltf.OpenNode(
-                name: grid.Name,
-                matrix: gridMatrix,
-                exts: new glTFExtension[] {
-                        new GLTFBIMNodeExtension(grid, null, IncludeProperties, PropertyContainer)
-                },
-                extras: extrasBuilder(grid)
-            );
-
-            gltf.CloseNode();
-
-            // record the grid in asset
-            if (AssetExt != null) {
-                if (AssetExt.Grids is null)
-                    AssetExt.Grids = new List<uint>();
-                AssetExt.Grids.Add(gridNodeIdx);
-            }
-
-            // not need to do anything else
-            return;
-        }
-    }
-
+    
     class GridAction : BuildBeginAction {
         public GridAction(Element element) : base(element) { }
 
@@ -137,23 +98,32 @@ namespace GLTFRevitExport.ExportContext.BuildActions {
             // TODO: make a matrix from grid
             float[] gridMatrix = null;
 
-            // create level node
-            var gridNodeIdx = gltf.OpenNode(
-                name: grid.Name,
-                matrix: gridMatrix,
-                exts: new glTFExtension[] {
-                        new GLTFBIMNodeExtension(grid, null, IncludeProperties, PropertyContainer)
-                },
-                extras: extrasBuilder(grid)
-            );
+            if (grid.Curve is Line gridLine) {
+                // add gltf-bim extension data
+                var gltfBim = new GLTFBIMNodeExtension(grid, null, IncludeProperties, PropertyContainer);
 
-            gltf.CloseNode();
+                // grab the two ends of the grid line as grid bounds
+                gltfBim.Bounds = new GLTFBIMBounds(
+                    gridLine.GetEndPoint(0),
+                    gridLine.GetEndPoint(1)
+                );
 
-            // record the grid in asset
-            if (AssetExt != null) {
-                if (AssetExt.Grids is null)
-                    AssetExt.Grids = new List<uint>();
-                AssetExt.Grids.Add(gridNodeIdx);
+                // create level node
+                var gridNodeIdx = gltf.OpenNode(
+                    name: grid.Name,
+                    matrix: gridMatrix,
+                    exts: new glTFExtension[] { gltfBim },
+                    extras: extrasBuilder(grid)
+                );
+
+                gltf.CloseNode();
+
+                // record the grid in asset
+                if (AssetExt != null) {
+                    if (AssetExt.Grids is null)
+                        AssetExt.Grids = new List<uint>();
+                    AssetExt.Grids.Add(gridNodeIdx);
+                }
             }
 
             // not need to do anything else

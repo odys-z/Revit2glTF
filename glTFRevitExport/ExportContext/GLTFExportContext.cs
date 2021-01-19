@@ -285,7 +285,10 @@ namespace GLTFRevitExport.ExportContext {
 
                 // Begin: Element
                 switch (e) {
+                    // Skip all these element types
                     case View _:
+                    case Level _:
+                    case Grid _:
                         goto SkipElementLabel;
 
                     case RevitLinkInstance linkInst:
@@ -620,8 +623,6 @@ namespace GLTFRevitExport.ExportContext {
                             new List<BuiltInCategory> {
                                 BuiltInCategory.OST_RvtLinks,
                                 BuiltInCategory.OST_Views,
-                                BuiltInCategory.OST_Levels,
-                                BuiltInCategory.OST_Grids
                             }
                         ),
                         filter
