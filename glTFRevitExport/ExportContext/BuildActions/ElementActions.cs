@@ -138,8 +138,14 @@ namespace GLTFRevitExport.ExportContext.BuildActions {
                             nodeExt.Bounds = bounds;
 
 #if DEBUG
-                        //var b = nodeExt.Bounds;
-                        //File.AppendAllText(@"points.txt", $"{node.Name},{b.Min.X},{b.Min.Y},{b.Min.Z},{b.Max.X},{b.Max.Y},{b.Max.Z}\n");
+                        // RE: script/bbox_preview.gh
+                        if (Environment.GetEnvironmentVariable("ARGYLEBBOXFILE") is string bboxPointsFile) {
+                            var b = nodeExt.Bounds;
+                            File.AppendAllText(
+                                bboxPointsFile,
+                                $"{node.Name},{b.Min.X},{b.Min.Y},{b.Min.Z},{b.Max.X},{b.Max.Y},{b.Max.Z}\n"
+                                );
+                        }
 #endif
 
                         int parentIdx = gltf.FindParentNode(idx);
