@@ -205,6 +205,8 @@ namespace GLTFRevitExport.GLTF {
 
         public glTFNode GetNode(uint idx) => _gltf.Nodes[idx];
 
+        public uint GetNodeIndex(glTFNode node) => _gltf.Nodes.IndexOf(node);
+
         public glTFNode GetActiveNode() => _gltf.Nodes.Peek();
 
         public int FindNode(Func<glTFNode, bool> filter) {

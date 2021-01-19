@@ -75,6 +75,34 @@ namespace GLTFRevitExport.ExportContext {
 
         private readonly Stack<PartData> _partStack = new Stack<PartData>();
 
+        private BoundsData CalculateBounds(float[] matrix = null) {
+            float minx, miny, minz, maxx, maxy, maxz;
+            minx = miny = minz = maxx = maxy = maxz = float.NaN;
+
+            Transform xform = null;
+            if (matrix != null)
+                xform = matrix.FromGLTFMatrix();
+            
+            foreach (var partData in _partStack)
+                foreach (var vertex in partData.Primitive.Vertices) {
+                    var vtx = vertex;
+                    if (xform != null)
+                        vtx = vertex.Transform(xform);
+
+                    minx = minx is float.NaN || vtx.X < minx ? vtx.X : minx;
+                    miny = miny is float.NaN || vtx.Y < miny ? vtx.Y : miny;
+                    minz = minz is float.NaN || vtx.Z < minz ? vtx.Z : minz;
+                    maxx = maxx is float.NaN || vtx.X > maxx ? vtx.X : maxx;
+                    maxy = maxy is float.NaN || vtx.Y > maxy ? vtx.Y : maxy;
+                    maxz = maxz is float.NaN || vtx.Z > maxz ? vtx.Z : maxz;
+                }
+
+            return new BoundsData(
+                new VectorData(minx, miny, minz),
+                new VectorData(maxx, maxy, maxz)
+            );
+        }
+
         private float[] LocalizePartStack() {
             List<float> vx = new List<float>();
             List<float> vy = new List<float>();
@@ -328,22 +356,25 @@ namespace GLTFRevitExport.ExportContext {
             else {
                 // if has mesh data
                 if (_partStack.Count > 0) {
-                    bool alreadyLocalized = false;
-                    if (_actions.Last() is ElementTransformAction)
-                        alreadyLocalized = true;
-
-
-                    float[] xform = null;
-                    if (!alreadyLocalized) {
+                    // calculate the bounding box from the parts data
+                    BoundsData bounds;
+                    if (_actions.Last() is ElementTransformAction action) {
+                        // transform bounds with existing transform
+                        Logger.Log("> determine instance bounding box");
+                        bounds = CalculateBounds(action.Matrix);
+                    } else {
+                        Logger.Log("> determine bounding box");
+                        bounds = CalculateBounds();
+                        
                         Logger.Log("> localized transform");
-                        xform = LocalizePartStack();
+                        float[] xform = LocalizePartStack();
+                        _actions.Enqueue(new ElementTransformAction(xform));
                     }
 
+                    _actions.Enqueue(new ElementBoundsAction(bounds));
+                    
                     foreach (var partData in _partStack)
                         _actions.Enqueue(new PartFromDataAction(partData));
-
-                    if (xform != null)
-                        _actions.Enqueue(new ElementTransformAction(xform));
                 }
                 _partStack.Clear();
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 using Autodesk.Revit.DB;
 
@@ -6,6 +7,7 @@ using GLTFRevitExport.GLTF;
 using GLTFRevitExport.Extensions;
 using GLTFRevitExport.GLTF.Schema;
 using GLTFRevitExport.GLTF.Extensions.BIM;
+using GLTFRevitExport.ExportContext.Geometry;
 
 namespace GLTFRevitExport.ExportContext.BuildActions {
     class ElementBeginAction : BuildBeginAction {
@@ -89,32 +91,6 @@ namespace GLTFRevitExport.ExportContext.BuildActions {
                     exts: new glTFExtension[] { bimExt },
                     extras: extrasBuilder(element)
                 );
-
-                var bbox = element.get_BoundingBox(null);
-                if (bbox != null)
-                    UpdateBounds(
-                        gltf: gltf,
-                        idx: newNodeIdx,
-                        bounds: new GLTFBIMBounds(bbox)
-                    );
-            }
-        }
-
-        private void UpdateBounds(GLTFBuilder gltf, uint idx, GLTFBIMBounds bounds) {
-            glTFNode node = gltf.GetNode(idx);
-            if (node.Extensions != null) {
-                foreach (var ext in node.Extensions) {
-                    if (ext.Value is GLTFBIMNodeExtension nodeExt) {
-                        if (nodeExt.Bounds != null)
-                            nodeExt.Bounds.Union(bounds);
-                        else
-                            nodeExt.Bounds = bounds;
-
-                        int parentIdx = gltf.FindParentNode(idx);
-                        if (parentIdx >= 0)
-                            UpdateBounds(gltf, (uint)parentIdx, nodeExt.Bounds);
-                    }
-                }
             }
         }
     }
@@ -129,16 +105,61 @@ namespace GLTFRevitExport.ExportContext.BuildActions {
                 gltf.CloseNode();
         }
     }
+    
+    class ElementBoundsAction : BaseAction {
+        private readonly BoundsData _bounds;
+
+        public ElementBoundsAction(BoundsData bounds) => _bounds = bounds;
+
+        public override void Execute(GLTFBuilder gltf, GLTFExportConfigs cfg) {
+            if (gltf.GetActiveNode() is glTFNode activeNode) {
+                Logger.Log("> bounds");
+                UpdateBounds(
+                    gltf,
+                    gltf.GetNodeIndex(activeNode),
+                    new GLTFBIMBounds(
+                        _bounds.Min.X, _bounds.Min.Y, _bounds.Min.Z,
+                        _bounds.Max.X, _bounds.Max.Y, _bounds.Max.Z
+                        )
+                    );   
+            }
+            else
+                Logger.Log("x transform");
+        }
+
+        private void UpdateBounds(GLTFBuilder gltf, uint idx, GLTFBIMBounds bounds) {
+            glTFNode node = gltf.GetNode(idx);
+            if (node.Extensions != null) {
+                foreach (var ext in node.Extensions) {
+                    if (ext.Value is GLTFBIMNodeExtension nodeExt) {
+                        if (nodeExt.Bounds != null)
+                            nodeExt.Bounds.Union(bounds);
+                        else
+                            nodeExt.Bounds = bounds;
+
+#if DEBUG
+                        //var b = nodeExt.Bounds;
+                        //File.AppendAllText(@"points.txt", $"{node.Name},{b.Min.X},{b.Min.Y},{b.Min.Z},{b.Max.X},{b.Max.Y},{b.Max.Z}\n");
+#endif
+
+                        int parentIdx = gltf.FindParentNode(idx);
+                        if (parentIdx >= 0)
+                            UpdateBounds(gltf, (uint)parentIdx, nodeExt.Bounds);
+                    }
+                }
+            }
+        }
+    }
 
     class ElementTransformAction : BaseAction {
-        private readonly float[] _xform;
+        public float[] Matrix;
 
-        public ElementTransformAction(float[] xform) => _xform = xform;
+        public ElementTransformAction(float[] matrix) => Matrix = matrix;
 
         public override void Execute(GLTFBuilder gltf, GLTFExportConfigs cfg) {
             if (gltf.GetActiveNode() is glTFNode activeNode) {
                 Logger.Log("> transform");
-                activeNode.Matrix = _xform;
+                activeNode.Matrix = Matrix;
             }
             else
                 Logger.Log("x transform");

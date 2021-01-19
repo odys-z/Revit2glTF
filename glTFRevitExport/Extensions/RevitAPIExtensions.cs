@@ -65,6 +65,15 @@ namespace GLTFRevitExport.Extensions {
             };
         }
 
+        public static Transform FromGLTFMatrix(this float[] matrix) {
+            var xform = Transform.Identity;
+            xform.BasisX = new XYZ(matrix[0], matrix[1], matrix[2]);
+            xform.BasisY = new XYZ(matrix[4], matrix[5], matrix[6]);
+            xform.BasisZ = new XYZ(matrix[8], matrix[9], matrix[10]);
+            xform.Origin = new XYZ(matrix[12], matrix[13], matrix[14]);
+            return xform;
+        }
+
         public static double ToGLTF(this Parameter p, double value) {
             // TODO: read value unit and convert correctly
             switch (p.Definition.UnitType) {
