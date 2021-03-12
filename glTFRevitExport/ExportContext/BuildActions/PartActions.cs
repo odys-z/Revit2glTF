@@ -102,7 +102,7 @@ namespace GLTFRevitExport.ExportContext.BuildActions {
                             gltf.AddMaterial(
                                 primitiveIndex: primIndex,
                                 name: material.Name,
-                                color: material.Color.ToGLTF(),
+                                color: material.Color.IsValid ? material.Color.ToGLTF() : cfg.DefaultColor.ToGLTF(),
                                 exts: new glTFExtension[] {
                         new GLTFBIMMaterialExtensions(material, IncludeProperties, PropertyContainer)
                                 },
@@ -201,7 +201,7 @@ namespace GLTFRevitExport.ExportContext.BuildActions {
                     gltf.AddMaterial(
                         primitiveIndex: primIndex,
                         name: _partData.Material.Name,
-                        color: _partData.Material.Color.ToGLTF(_partData.Material.Transparency / 128f),
+                        color: _partData.Material.Color.IsValid ? _partData.Material.Color.ToGLTF(_partData.Material.Transparency / 128f) : cfg.DefaultColor.ToGLTF(),
                         exts: new glTFExtension[] {
                         new GLTFBIMMaterialExtensions(_partData.Material, IncludeProperties, PropertyContainer)
                         },

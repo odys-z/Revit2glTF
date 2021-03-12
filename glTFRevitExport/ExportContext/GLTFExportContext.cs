@@ -488,6 +488,8 @@ namespace GLTFRevitExport.ExportContext {
                             && _partStack.Peek() is PartData partPrim) {
                         // if color and transparency are the same
                         if (partPrim.Material is null
+                                && node.Color.IsValid
+                                && partPrim.Color.IsValid
                                 && node.Color.Compare(partPrim.Color)
                                 && node.Transparency == partPrim.Transparency) {
                             Logger.Log("> material keep");
