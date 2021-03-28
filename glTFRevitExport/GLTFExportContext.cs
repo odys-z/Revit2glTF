@@ -7,6 +7,7 @@ using Autodesk.Revit.DB;
 using GLTFRevitExport.GLTF.Schema;
 using GLTFRevitExport.GLTF.Package;
 using GLTFRevitExport.Extensions;
+using GLTFRevitExport.ExportContext;
 using GLTFRevitExport.ExportContext.BuildActions;
 using GLTFRevitExport.ExportContext.Geometry;
 
