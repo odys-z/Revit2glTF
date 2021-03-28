@@ -13,7 +13,7 @@ using GLTFRevitExport.ExportContext.Geometry;
 
 using Autodesk.Revit.DB.Architecture;
 
-namespace GLTFRevitExport.ExportContext {
+namespace GLTFRevitExport {
     #region Initialization
     sealed partial class GLTFExportContext : IExportContext {
         public GLTFExportContext(Document doc, GLTFExportConfigs exportConfigs = null) {

@@ -32,7 +32,7 @@ namespace GLTFRevitExport {
         /// <summary>
         /// Embed linked Revit models
         /// </summary>
-        public bool EmbedLinkedModels { get; set; } = true;
+        public bool EmbedLinkedModels { get; set; } = false;
 
         /// <summary>
         /// Export Revit element parameter data
@@ -42,13 +42,18 @@ namespace GLTFRevitExport {
         /// <summary>
         /// Whether to embed parameter data inside glTF file or write to external file
         /// </summary>
-        public bool EmbedParameters { get; set; } = true;
+        public bool EmbedParameters { get; set; } = false;
+
+        /// <summary>
+        /// Export Revit material data
+        /// </summary>
+        public bool ExportMaterials { get; set; } = false;
 
         /// <summary>
         /// Cancellation toke for cancelling the export progress
         /// </summary>
         public CancellationToken CancelToken;
 
-        public Color DefaultColor = new Color(0, 0, 0);
+        public Color DefaultColor = new Color(255, 255, 255);
     }
 }
