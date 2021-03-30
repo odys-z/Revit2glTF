@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 
 using Autodesk.Revit.DB;
 
@@ -7,6 +8,7 @@ using GLTFRevitExport.Extensions;
 using GLTFRevitExport.GLTF.Schema;
 using GLTFRevitExport.GLTF.Extensions.BIM;
 using GLTFRevitExport.Properties;
+using System.IO;
 
 namespace GLTFRevitExport.ExportContext.BuildActions {
     class SceneBeginAction : BuildBeginAction {
@@ -39,6 +41,7 @@ namespace GLTFRevitExport.ExportContext.BuildActions {
     class SceneEndAction : BuildEndAction {
         public override void Execute(GLTFBuilder gltf, GLTFExportConfigs cfg) {
             Logger.Log("- view end");
+
             // close root node
             gltf.CloseNode();
             // close scene

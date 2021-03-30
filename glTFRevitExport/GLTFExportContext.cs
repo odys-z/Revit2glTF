@@ -1,17 +1,18 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 
 using Autodesk.Revit.DB;
+using Autodesk.Revit.DB.Architecture;
 
+using GLTFRevitExport.Extensions;
 using GLTFRevitExport.GLTF.Schema;
 using GLTFRevitExport.GLTF.Package;
-using GLTFRevitExport.Extensions;
+using GLTFRevitExport.GLTF.Extensions.BIM;
 using GLTFRevitExport.ExportContext;
 using GLTFRevitExport.ExportContext.BuildActions;
 using GLTFRevitExport.ExportContext.Geometry;
-
-using Autodesk.Revit.DB.Architecture;
 
 namespace GLTFRevitExport {
     #region Initialization
@@ -50,6 +51,11 @@ namespace GLTFRevitExport {
         private readonly Stack<Document> _docStack = new Stack<Document>();
 
         /// <summary>
+        /// Transform of the embedded document
+        /// </summary>
+        private float[] _linkMatrix = null;
+
+        /// <summary>
         /// View stack to hold the view being processed.
         /// A stack is used to allow referencing view when needed.
         /// It is not expected for this stack to hold more than one view,
@@ -76,19 +82,32 @@ namespace GLTFRevitExport {
 
         private readonly Stack<PartData> _partStack = new Stack<PartData>();
 
-        private BoundsData CalculateBounds(float[] matrix = null) {
+        private GLTFBIMBounds CalculateBounds(float[] matrix = null) {
             float minx, miny, minz, maxx, maxy, maxz;
             minx = miny = minz = maxx = maxy = maxz = float.NaN;
 
-            Transform xform = null;
+            Transform mxform = null;
             if (matrix != null)
-                xform = matrix.FromGLTFMatrix();
-            
+                mxform = matrix.FromGLTFMatrix();
+
+            // determine the transform that needs to be applied
+            Transform xform = null;
+            if (mxform is Transform)
+                xform = mxform;
+
+            if (_linkMatrix != null) {
+                var lxform = _linkMatrix.FromGLTFMatrix();
+                if (xform is Transform)
+                    xform = lxform.Multiply(xform);
+                else
+                    xform = lxform;
+            }
+
             foreach (var partData in _partStack)
                 foreach (var vertex in partData.Primitive.Vertices) {
                     var vtx = vertex;
-                    if (xform != null)
-                        vtx = vertex.Transform(xform);
+                    if (xform is Transform)
+                        vtx = vtx.Transform(xform);
 
                     minx = minx is float.NaN || vtx.X < minx ? vtx.X : minx;
                     miny = miny is float.NaN || vtx.Y < miny ? vtx.Y : miny;
@@ -98,9 +117,9 @@ namespace GLTFRevitExport {
                     maxz = maxz is float.NaN || vtx.Z > maxz ? vtx.Z : maxz;
                 }
 
-            return new BoundsData(
-                new VectorData(minx, miny, minz),
-                new VectorData(maxx, maxy, maxz)
+            return new GLTFBIMBounds(
+                minx, miny, minz,
+                maxx, maxy, maxz
             );
         }
 
@@ -363,18 +382,24 @@ namespace GLTFRevitExport {
                 // if has mesh data
                 if (_partStack.Count > 0) {
                     // calculate the bounding box from the parts data
-                    BoundsData bounds;
-                    if (_actions.Last() is ElementTransformAction action) {
-                        // transform bounds with existing transform
-                        Logger.Log("> determine instance bounding box");
-                        bounds = CalculateBounds(action.Matrix);
-                    } else {
-                        Logger.Log("> determine bounding box");
-                        bounds = CalculateBounds();
-                        
-                        Logger.Log("> localized transform");
-                        float[] xform = LocalizePartStack();
-                        _actions.Enqueue(new ElementTransformAction(xform));
+                    GLTFBIMBounds bounds;
+                    switch(_actions.Last()) {
+                        // when element is a Revit family instance
+                        case ElementTransformAction etAction:
+                            // transform bounds with existing transform
+                            Logger.Log("> determine instance bounding box");
+                            bounds = CalculateBounds(etAction.Matrix);
+                            break;
+
+                        // when element is a system family
+                        default:
+                            Logger.Log("> determine bounding box");
+                            bounds = CalculateBounds();
+
+                            Logger.Log("> localized transform");
+                            float[] xform = LocalizePartStack();
+                            _actions.Enqueue(new ElementTransformAction(xform));
+                            break;
                     }
 
                     _actions.Enqueue(new ElementBoundsAction(bounds));
@@ -424,8 +449,12 @@ namespace GLTFRevitExport {
                     // so all subsequent calls to OnElement can grab the element
                     // from the linked document correctly
                     _docStack.Push(node.GetDocument());
-
+                    
                     Logger.Log("+ link document begin");
+
+                    if (_cfgs.ExportLinkedModels)
+                        _linkMatrix = node.GetTransform().ToGLTF();
+
                     return RenderNodeAction.Proceed;
                 }
                 else
@@ -439,12 +468,14 @@ namespace GLTFRevitExport {
                 _skipElement = false;
             else {
                 if (_cfgs.ExportLinkedModels) {
+                    
                     Logger.Log("> transform (link)");
                     float[] xform = node.GetTransform().ToGLTF();
                     _actions.Enqueue(new LinkTransformAction(xform));
 
                     Logger.Log("- link document end");
                     _docStack.Pop();
+                    _linkMatrix = null;
                 }
             }
         }
@@ -726,6 +757,25 @@ namespace GLTFRevitExport {
             }
 
             Logger.Log("- end build");
+
+#if DEBUG
+            for (uint idx = 0; idx < mainCtx.Builder.NodeCount; idx++) {
+                if (mainCtx.Builder.GetNode(idx) is glTFNode node)
+                    if (node.Extensions != null)
+                        foreach (var ext in node.Extensions)
+                            if (ext.Value is GLTFBIMNodeExtension nodeExt)
+                                if (nodeExt.Bounds != null) {
+                                    // RE: script/bbox_preview.gh
+                                    var b = nodeExt.Bounds;
+                                    if (b != null && Environment.GetEnvironmentVariable("ARGYLEBBOXFILE") is string bboxPointsFile) {
+                                        File.AppendAllText(
+                                            bboxPointsFile,
+                                            $"{node.Name ?? "?"},{b.Min.X},{b.Min.Y},{b.Min.Z},{b.Max.X},{b.Max.Y},{b.Max.Z}\n"
+                                            );
+                                    }
+                                }
+            }
+#endif
 
             Logger.Log("+ start pack");
 

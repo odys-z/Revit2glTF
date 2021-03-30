@@ -1,4 +1,12 @@
-﻿using Autodesk.Revit.DB;
+﻿using System;
+using System.Collections.Generic;
+
+using Autodesk.Revit.DB;
+
+using GLTFRevitExport.GLTF;
+using GLTFRevitExport.Extensions;
+using GLTFRevitExport.GLTF.Schema;
+using GLTFRevitExport.GLTF.Extensions.BIM;
 
 namespace GLTFRevitExport.ExportContext.BuildActions {
     class LinkBeginAction : ElementBeginAction {
@@ -12,10 +20,10 @@ namespace GLTFRevitExport.ExportContext.BuildActions {
         }
     }
 
-    class LinkEndAction : ElementEndAction {
-    }
-
     class LinkTransformAction : ElementTransformAction {
         public LinkTransformAction(float[] xform) : base(xform) { }
+    }
+
+    class LinkEndAction : ElementEndAction {
     }
 }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 
 using Autodesk.Revit.DB;
 
@@ -7,7 +6,6 @@ using GLTFRevitExport.GLTF;
 using GLTFRevitExport.Extensions;
 using GLTFRevitExport.GLTF.Schema;
 using GLTFRevitExport.GLTF.Extensions.BIM;
-using GLTFRevitExport.ExportContext.Geometry;
 
 namespace GLTFRevitExport.ExportContext.BuildActions {
     class ElementBeginAction : BuildBeginAction {
@@ -94,22 +92,26 @@ namespace GLTFRevitExport.ExportContext.BuildActions {
             }
         }
     }
+    
+    class ElementTransformAction : BaseAction {
+        public float[] Matrix;
 
-    class ElementEndAction : BuildEndAction {
+        public ElementTransformAction(float[] matrix) => Matrix = matrix;
+
         public override void Execute(GLTFBuilder gltf, GLTFExportConfigs cfg) {
-            Logger.Log("- element end");
-            // close instance node
-            gltf.CloseNode();
-            // close type node
-            if (IncludeHierarchy)
-                gltf.CloseNode();
+            if (gltf.GetActiveNode() is glTFNode activeNode) {
+                Logger.Log("> transform");
+                activeNode.Matrix = Matrix;
+            }
+            else
+                Logger.Log("x transform");
         }
     }
-    
-    class ElementBoundsAction : BaseAction {
-        private readonly BoundsData _bounds;
 
-        public ElementBoundsAction(BoundsData bounds) => _bounds = bounds;
+    class ElementBoundsAction : BaseAction {
+        private readonly GLTFBIMBounds _bounds;
+
+        public ElementBoundsAction(GLTFBIMBounds bounds) => _bounds = bounds;
 
         public override void Execute(GLTFBuilder gltf, GLTFExportConfigs cfg) {
             if (gltf.GetActiveNode() is glTFNode activeNode) {
@@ -121,7 +123,7 @@ namespace GLTFRevitExport.ExportContext.BuildActions {
                         _bounds.Min.X, _bounds.Min.Y, _bounds.Min.Z,
                         _bounds.Max.X, _bounds.Max.Y, _bounds.Max.Z
                         )
-                    );   
+                    );
             }
             else
                 Logger.Log("x transform");
@@ -135,18 +137,7 @@ namespace GLTFRevitExport.ExportContext.BuildActions {
                         if (nodeExt.Bounds != null)
                             nodeExt.Bounds.Union(bounds);
                         else
-                            nodeExt.Bounds = bounds;
-
-#if DEBUG
-                        // RE: script/bbox_preview.gh
-                        if (Environment.GetEnvironmentVariable("ARGYLEBBOXFILE") is string bboxPointsFile) {
-                            var b = nodeExt.Bounds;
-                            File.AppendAllText(
-                                bboxPointsFile,
-                                $"{node.Name},{b.Min.X},{b.Min.Y},{b.Min.Z},{b.Max.X},{b.Max.Y},{b.Max.Z}\n"
-                                );
-                        }
-#endif
+                            nodeExt.Bounds = new GLTFBIMBounds(bounds);
 
                         int parentIdx = gltf.FindParentNode(idx);
                         if (parentIdx >= 0)
@@ -157,18 +148,15 @@ namespace GLTFRevitExport.ExportContext.BuildActions {
         }
     }
 
-    class ElementTransformAction : BaseAction {
-        public float[] Matrix;
-
-        public ElementTransformAction(float[] matrix) => Matrix = matrix;
-
+    class ElementEndAction : BuildEndAction {
         public override void Execute(GLTFBuilder gltf, GLTFExportConfigs cfg) {
-            if (gltf.GetActiveNode() is glTFNode activeNode) {
-                Logger.Log("> transform");
-                activeNode.Matrix = Matrix;
-            }
-            else
-                Logger.Log("x transform");
+            Logger.Log("- element end");
+
+            // close instance node
+            gltf.CloseNode();
+            // close type node
+            if (IncludeHierarchy)
+                gltf.CloseNode();
         }
     }
 }

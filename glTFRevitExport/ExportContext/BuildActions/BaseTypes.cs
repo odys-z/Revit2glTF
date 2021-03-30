@@ -22,7 +22,7 @@ namespace GLTFRevitExport.ExportContext.BuildActions {
         public bool IncludeProperties = true;
         public GLTFBIMPropertyContainer PropertyContainer = null;
 
-        public abstract void Execute(GLTFBuilder gltf, GLTFExportConfigs cfg);
+        public abstract void Execute(GLTFBuilder gltf, GLTFExportConfigs cfg);  
     }
 
     abstract class BaseElementAction : BaseAction {

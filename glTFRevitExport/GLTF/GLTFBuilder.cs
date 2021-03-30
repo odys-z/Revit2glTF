@@ -154,6 +154,8 @@ namespace GLTFRevitExport.GLTF {
 
         #region Scenes
 
+        public uint SceneCount => (uint)_gltf.Scenes.Count;
+
         public uint OpenScene(string name,
                               glTFExtension[] exts, glTFExtras extras) {
             _gltf.Scenes.Add(
@@ -180,6 +182,8 @@ namespace GLTFRevitExport.GLTF {
         #endregion
 
         #region Nodes
+        public uint NodeCount => (uint)_gltf.Nodes.Count();
+
         public uint AppendNode(string name, float[] matrix,
                                glTFExtension[] exts, glTFExtras extras) {
             // create new node and set base properties
@@ -279,6 +283,7 @@ namespace GLTFRevitExport.GLTF {
         #endregion
 
         #region Node Mesh
+
         public uint AddPrimitive(float[] vertices, float[] normals, uint[] faces) {
             // ensure vertex and face data is available
             if (vertices is null || faces is null)

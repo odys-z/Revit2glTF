@@ -64,7 +64,7 @@ namespace GLTFRevitExport.ExportContext.BuildActions {
                             if (nodeExt.Bounds != null)
                                 nodeExt.Bounds.Union(bounds);
                             else
-                                nodeExt.Bounds = bounds;
+                                nodeExt.Bounds = new GLTFBIMBounds(bounds);
                         }
                     }
                 }

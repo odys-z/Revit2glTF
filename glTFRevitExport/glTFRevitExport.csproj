@@ -152,7 +152,6 @@
     <Compile Include="ExportContext\BuildActions\LinkActions.cs" />
     <Compile Include="ExportContext\BuildActions\SceneActions.cs" />
     <Compile Include="ExportContext\BuildContext.cs" />
-    <Compile Include="ExportContext\Geometry\BoundsData.cs" />
     <Compile Include="ExportContext\Geometry\FacetData.cs" />
     <Compile Include="ExportContext\Geometry\PartData.cs" />
     <Compile Include="ExportContext\Geometry\PrimitiveData.cs" />
