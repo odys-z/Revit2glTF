@@ -56,6 +56,8 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
         public GLTFBIMBounds(GLTFBIMBounds bounds) {
             Min = new GLTFBIMVector(bounds.Min);
             Max = new GLTFBIMVector(bounds.Max);
+            if (bounds.LinkHostBounds != null)
+                LinkHostBounds = new GLTFBIMBounds(bounds.LinkHostBounds);
         }
 
         public GLTFBIMBounds(SerializationInfo info, StreamingContext context) {
@@ -70,6 +72,8 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
 
         [JsonProperty("max")]
         public GLTFBIMVector Max { get; set; }
+
+        public GLTFBIMBounds LinkHostBounds { get; set; } = null;
 
         public void Union(GLTFBIMBounds other) {
             Min.ContractTo(other.Min);
@@ -89,9 +93,10 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
         public float Z { get; set; }
 
         public GLTFBIMVector(XYZ pt) {
-            X = pt.X.ToGLTFLength();
-            Y = pt.Y.ToGLTFLength();
-            Z = pt.Z.ToGLTFLength();
+            float[] vector = pt.ToGLTF();
+            X = vector[0];
+            Y = vector[1];
+            Z = vector[2];
         }
 
         public GLTFBIMVector(float x, float y, float z) {

@@ -109,20 +109,18 @@ namespace GLTFRevitExport.ExportContext.BuildActions {
     }
 
     class ElementBoundsAction : BaseAction {
-        private readonly GLTFBIMBounds _bounds;
+        protected GLTFBIMBounds _bounds;
 
         public ElementBoundsAction(GLTFBIMBounds bounds) => _bounds = bounds;
 
         public override void Execute(GLTFBuilder gltf, GLTFExportConfigs cfg) {
-            if (gltf.GetActiveNode() is glTFNode activeNode) {
+            if (_bounds != null &&
+                    gltf.GetActiveNode() is glTFNode activeNode) {
                 Logger.Log("> bounds");
                 UpdateBounds(
                     gltf,
                     gltf.GetNodeIndex(activeNode),
-                    new GLTFBIMBounds(
-                        _bounds.Min.X, _bounds.Min.Y, _bounds.Min.Z,
-                        _bounds.Max.X, _bounds.Max.Y, _bounds.Max.Z
-                        )
+                    new GLTFBIMBounds(_bounds)
                     );
             }
             else
@@ -130,18 +128,20 @@ namespace GLTFRevitExport.ExportContext.BuildActions {
         }
 
         private void UpdateBounds(GLTFBuilder gltf, uint idx, GLTFBIMBounds bounds) {
-            glTFNode node = gltf.GetNode(idx);
-            if (node.Extensions != null) {
-                foreach (var ext in node.Extensions) {
-                    if (ext.Value is GLTFBIMNodeExtension nodeExt) {
-                        if (nodeExt.Bounds != null)
-                            nodeExt.Bounds.Union(bounds);
-                        else
-                            nodeExt.Bounds = new GLTFBIMBounds(bounds);
+            if (bounds != null) {
+                glTFNode node = gltf.GetNode(idx);
+                if (node.Extensions != null) {
+                    foreach (var ext in node.Extensions) {
+                        if (ext.Value is GLTFBIMNodeExtension nodeExt) {
+                            if (nodeExt.Bounds != null)
+                                nodeExt.Bounds.Union(bounds);
+                            else
+                                nodeExt.Bounds = new GLTFBIMBounds(bounds);
 
-                        int parentIdx = gltf.FindParentNode(idx);
-                        if (parentIdx >= 0)
-                            UpdateBounds(gltf, (uint)parentIdx, nodeExt.Bounds);
+                            int parentIdx = gltf.FindParentNode(idx);
+                            if (parentIdx >= 0)
+                                UpdateBounds(gltf, (uint)parentIdx, nodeExt.Bounds);
+                        }
                     }
                 }
             }

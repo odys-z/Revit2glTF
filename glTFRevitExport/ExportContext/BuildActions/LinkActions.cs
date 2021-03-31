@@ -24,6 +24,15 @@ namespace GLTFRevitExport.ExportContext.BuildActions {
         public LinkTransformAction(float[] xform) : base(xform) { }
     }
 
+    class LinkBoundsAction : ElementBoundsAction {
+        public LinkBoundsAction() : base(null) { }
+
+        public GLTFBIMBounds Bounds {
+            get => _bounds;
+            set => _bounds = value;
+        }
+    }
+
     class LinkEndAction : ElementEndAction {
     }
 }
