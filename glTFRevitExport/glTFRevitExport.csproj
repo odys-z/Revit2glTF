@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{4E089540-E5C0-45D9-BB33-3CBA0E4373B5}</ProjectGuid>
+    <ProjectGuid>{16D0AF26-B9A2-4C97-A821-41CBD93D9B73}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>glTFRevitExport</RootNamespace>
-    <AssemblyName>glTFRevitExport</AssemblyName>
+    <RootNamespace>GLTFRevitExport</RootNamespace>
+    <AssemblyName>Argyle.glTFRevitExport</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <WarningLevel>4</WarningLevel>
@@ -35,7 +35,7 @@
     <RevitVersion>2021</RevitVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug2017|x64'">
-    <OutputPath>bin\Debug2017\</OutputPath>
+    <OutputPath>..\..\..\build\Debug2017\</OutputPath>
     <DebugSymbols>true</DebugSymbols>
     <Optimize>false</Optimize>
     <DefineConstants>TRACE;DEBUG;REVIT2017</DefineConstants>
@@ -45,7 +45,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug2018|x64'">
-    <OutputPath>bin\Debug2018\</OutputPath>
+    <OutputPath>..\..\..\build\Debug2018\</OutputPath>
     <DebugSymbols>true</DebugSymbols>
     <Optimize>false</Optimize>
     <DefineConstants>TRACE;DEBUG;REVIT2018</DefineConstants>
@@ -55,7 +55,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug2019|x64'">
-    <OutputPath>bin\Debug2019\</OutputPath>
+    <OutputPath>..\..\..\build\Debug2019\</OutputPath>
     <DebugSymbols>true</DebugSymbols>
     <Optimize>false</Optimize>
     <DefineConstants>TRACE;DEBUG;REVIT2019</DefineConstants>
@@ -65,7 +65,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug2020|x64'">
-    <OutputPath>bin\Debug2020\</OutputPath>
+    <OutputPath>..\..\..\build\Debug2020\</OutputPath>
     <DebugSymbols>true</DebugSymbols>
     <Optimize>false</Optimize>
     <DefineConstants>TRACE;DEBUG;REVIT2020</DefineConstants>
@@ -75,7 +75,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug2021|x64'">
-    <OutputPath>bin\Debug2021\</OutputPath>
+    <OutputPath>..\..\..\build\Debug2021\</OutputPath>
     <DebugSymbols>true</DebugSymbols>
     <Optimize>false</Optimize>
     <DefineConstants>TRACE;DEBUG;REVIT2021</DefineConstants>
@@ -130,6 +130,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
@@ -144,58 +145,83 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
-    <Page Include="WPF\MainWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Compile Include="App.cs" />
-    <Compile Include="Command.cs" />
-    <Compile Include="glTF.cs" />
-    <Compile Include="GlTFExportContext.cs" />
-    <Compile Include="Containers.cs" />
-    <Compile Include="GLTFManager.cs" />
-    <Compile Include="Util.cs" />
-    <Compile Include="WPF\MainWindow.xaml.cs">
-      <DependentUpon>MainWindow.xaml</DependentUpon>
-      <SubType>Code</SubType>
+    <Compile Include="ExportContext\BuildActions\BaseTypes.cs" />
+    <Compile Include="ExportContext\BuildActions\ElementActions.cs" />
+    <Compile Include="ExportContext\BuildActions\PartActions.cs" />
+    <Compile Include="ExportContext\BuildActions\LevelGridZoneActions.cs" />
+    <Compile Include="ExportContext\BuildActions\LinkActions.cs" />
+    <Compile Include="ExportContext\BuildActions\SceneActions.cs" />
+    <Compile Include="ExportContext\BuildContext.cs" />
+    <Compile Include="ExportContext\Geometry\FacetData.cs" />
+    <Compile Include="ExportContext\Geometry\PartData.cs" />
+    <Compile Include="ExportContext\Geometry\PrimitiveData.cs" />
+    <Compile Include="ExportContext\Geometry\VectorData.cs" />
+    <Compile Include="GLTF.Extensions.BIM\BaseTypes\GLTFBIMContainer.cs" />
+    <Compile Include="GLTF.Extensions.BIM\GLTFBIMNodeExtensions.cs" />
+    <Compile Include="GLTF.Extensions.BIM\GLTFBIMMaterialExtensions.cs" />
+    <Compile Include="GLTF.Extensions.BIM\GLTFBIMPropertyContainer.cs" />
+    <Compile Include="GLTFBuildConfigs.cs" />
+    <Compile Include="GLTF\BufferSegments\GLTFBufferScalar1Segment.cs" />
+    <Compile Include="GLTF\BufferSegments\GLTFBufferScalar2Segment.cs" />
+    <Compile Include="GLTF\BufferSegments\GLTFBufferScalar4Segment.cs" />
+    <Compile Include="GLTF\BufferSegments\BaseTypes.cs" />
+    <Compile Include="GLTF\BufferSegments\GLTFBufferVectorSegment.cs" />
+    <Compile Include="GLTF\Package\GLTFPackageBinaryItem.cs" />
+    <Compile Include="GLTF\Package\BaseTypes.cs" />
+    <Compile Include="Extensions\RevitAPIExtensions.cs" />
+    <Compile Include="Extensions\NumberExtensions.cs" />
+    <Compile Include="Extensions\StringExtensions.cs" />
+    <Compile Include="GLTFExportConfigs.cs" />
+    <Compile Include="GLTFExporter.cs" />
+    <Compile Include="GLTF.Extensions.BIM\BaseTypes\GLTFBIMExtension.cs" />
+    <Compile Include="GLTF.Extensions.BIM\GLTFBIMAssetExtension.cs" />
+    <Compile Include="GLTF.Extensions.BIM\BaseTypes\GLTFBIMPropertyExtension.cs" />
+    <Compile Include="GLTF\Package\GLTFPackageJsonItem.cs" />
+    <Compile Include="GLTF\Package\GLTFPackageModelItem.cs" />
+    <Compile Include="GLTF\Schema\glTF.cs" />
+    <Compile Include="GLTF\Schema\glTFAccessor.cs" />
+    <Compile Include="GLTF\Schema\glTFAsset.cs" />
+    <Compile Include="GLTF\Schema\glTFAttributes.cs" />
+    <Compile Include="GLTF\Schema\glTFBuffer.cs" />
+    <Compile Include="GLTF\Schema\glTFBufferView.cs" />
+    <Compile Include="GLTF\Schema\glTFConstants.cs" />
+    <Compile Include="GLTF\Schema\glTFExtension.cs" />
+    <Compile Include="GLTF\Schema\glTFExtras.cs" />
+    <Compile Include="GLTF\Schema\glTFMaterial.cs" />
+    <Compile Include="GLTF\Schema\glTFMesh.cs" />
+    <Compile Include="GLTF\Schema\glTFMeshPrimitive.cs" />
+    <Compile Include="GLTF\Schema\glTFNode.cs" />
+    <Compile Include="GLTF\Schema\glTFNodes.cs" />
+    <Compile Include="GLTF\Schema\glTFProperty.cs" />
+    <Compile Include="GLTF\Schema\glTFScene.cs" />
+    <Compile Include="ExportContext\Logger.cs" />
+    <Compile Include="GLTFExportContext.cs" />
+    <Compile Include="GLTF\GLTFBuilder.cs" />
+    <Compile Include="Properties\StringLib.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>StringLib.resx</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Properties\Settings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Settings.settings</DependentUpon>
-      <DesignTimeSharedInput>True</DesignTimeSharedInput>
-    </Compile>
-    <EmbeddedResource Include="Properties\Resources.resx">
+    <EmbeddedResource Include="Properties\StringLib.resx">
       <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <LastGenOutput>StringLib.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <None Include="Properties\Settings.settings">
-      <Generator>SettingsSingleFileGenerator</Generator>
-      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
-    </None>
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="glTFRevitExport.addin">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <EmbeddedResource Include="Embedded Media\small.png" />
-    <EmbeddedResource Include="Embedded Media\large.png" />
+    <PackageReference Include="Revit_All_Main_Versions_API_x64" Version="$(RevitVersion).0.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json">
-      <Version>12.0.3</Version>
-    </PackageReference>
-    <PackageReference Include="Revit_All_Main_Versions_API_x64" Version="$(RevitVersion).0.0" />
+    <ProjectReference Include="..\..\Argyle.Newtonsoft.Json\Src\Newtonsoft.Json\Newtonsoft.Json.csproj">
+      <Project>{0e806b3a-ae73-40c6-9501-c853d9b4f853}</Project>
+      <Name>Newtonsoft.Json</Name>
+      <Private>True</Private>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
