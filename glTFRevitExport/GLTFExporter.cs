@@ -10,6 +10,12 @@ using GLTFRevitExport.GLTF.Package;
 using GLTFRevitExport.ExportContext;
 
 namespace GLTFRevitExport {
+    /// <summary>
+    /// Revit knowledge base about CustomExporter:
+    /// https://knowledge.autodesk.com/support/revit-products/learn-explore/caas/CloudHelp/cloudhelp/2014/ENU/Revit/files/GUID-27FD73B7-B569-4507-AAC4-B17F3728D178-htm.html
+    /// and helpful blog:
+    /// https://www.programmersought.com/article/60105035818/
+    /// </summary>
     public class GLTFExporter {
         private readonly GLTFExportContext _ctx = null;
 
