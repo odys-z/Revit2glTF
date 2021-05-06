@@ -169,7 +169,7 @@ namespace GLTFRevitExport {
     #endregion
 
     #region IExportContext Implementation
-#if REVIT2019
+#if (REVIT2017 || REVIT2019 || REVIT2018)
     sealed partial class GLTFExportContext : IExportContext, IModelExportContext {
 #else
     sealed partial class GLTFExportContext : IExportContext, IExportContextBase, IModelExportContext {

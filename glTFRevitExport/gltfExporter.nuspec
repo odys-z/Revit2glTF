@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package >
+  <metadata>
+    <id>Antson.CSharp</id>
+    <version>0.9.3</version>
+    <title>Antson.C#</title>
+    <authors>odys-z.github.io</authors>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <projectUrl>http://github.com/odys-z/Antson/</projectUrl>
+    <iconUrl>https://odys-z.github.io/css/odysz.png</iconUrl>
+    <description>C# version of Antson</description>
+    <releaseNotes>Preparing v0.9.3</releaseNotes>
+    <copyright>Odys Zhou 2022</copyright>
+    <tags>Antson C#</tags>
+    <dependencies>
+      <dependency id="Antlr4.Runtime.Standard" version="4.9.2" />
+    </dependencies>
+  </metadata>
+</package>

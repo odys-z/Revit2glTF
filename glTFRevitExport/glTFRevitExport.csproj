@@ -35,7 +35,7 @@
     <RevitVersion>2021</RevitVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug2017|x64'">
-    <OutputPath>..\..\..\build\Debug2017\</OutputPath>
+    <OutputPath>build\Debug2017\</OutputPath>
     <DebugSymbols>true</DebugSymbols>
     <Optimize>false</Optimize>
     <DefineConstants>TRACE;DEBUG;REVIT2017</DefineConstants>
@@ -128,6 +128,12 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="RevitAPI">
+      <HintPath>..\..\..\..\..\Program Files\Autodesk\Revit 2017\RevitAPI.dll</HintPath>
+    </Reference>
+    <Reference Include="RevitAPIUI">
+      <HintPath>..\..\..\..\..\Program Files\Autodesk\Revit 2017\RevitAPIUI.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Web" />
@@ -214,6 +220,9 @@
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json">
+      <Version>13.0.1</Version>
+    </PackageReference>
     <PackageReference Include="Revit_All_Main_Versions_API_x64" Version="$(RevitVersion).0.0" />
   </ItemGroup>
   <ItemGroup>
@@ -223,7 +232,17 @@
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="gltfExporter.addin" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>copy "$(ProjectDir)gltfExporter.addin" "$(ALLUSERSPROFILE)/Autodesk/Revit/Addins/2017"
+xcopy /y "$(ProjectDir)assets" "$(ALLUSERSPROFILE)/Autodesk/Revit/Addins/2017/gltfExporter"
+xcopy /y "$(ProjectDir)build\Debug2017\Argyle.*" "$(ALLUSERSPROFILE)/Autodesk/Revit/Addins/2017/gltfExporter"
+xcopy /y "$(ProjectDir)build\Debug2017\Newtonsoft.Json.dll" "$(ALLUSERSPROFILE)/Autodesk/Revit/Addins/2017/gltfExporter"
+</PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

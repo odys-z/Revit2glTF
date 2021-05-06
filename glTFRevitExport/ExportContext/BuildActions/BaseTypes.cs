@@ -12,7 +12,6 @@ using GLTFRevitExport.GLTF.Extensions.BIM;
 using GLTFRevitExport.Properties;
 using System.Runtime.CompilerServices;
 using Autodesk.Revit.UI;
-using Autodesk.Revit.DB.Visual;
 using Autodesk.Revit.DB.Architecture;
 
 namespace GLTFRevitExport.ExportContext.BuildActions {

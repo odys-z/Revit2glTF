@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30320.27
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GLTFRevitExport", "GLTFRevitExport\GLTFRevitExport.csproj", "{4E089540-E5C0-45D9-BB33-3CBA0E4373B5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GLTFRevitExport", "GLTFRevitExport\GLTFRevitExport.csproj", "{16D0AF26-B9A2-4C97-A821-41CBD93D9B73}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,16 +19,17 @@ Global
 		Release2021|Any CPU = Release2021|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{4E089540-E5C0-45D9-BB33-3CBA0E4373B5}.Debug2017|Any CPU.ActiveCfg = Debug2017|x64
-		{4E089540-E5C0-45D9-BB33-3CBA0E4373B5}.Debug2018|Any CPU.ActiveCfg = Debug2018|x64
-		{4E089540-E5C0-45D9-BB33-3CBA0E4373B5}.Debug2019|Any CPU.ActiveCfg = Debug2019|x64
-		{4E089540-E5C0-45D9-BB33-3CBA0E4373B5}.Debug2020|Any CPU.ActiveCfg = Debug2020|x64
-		{4E089540-E5C0-45D9-BB33-3CBA0E4373B5}.Debug2021|Any CPU.ActiveCfg = Debug2021|x64
-		{4E089540-E5C0-45D9-BB33-3CBA0E4373B5}.Release2017|Any CPU.ActiveCfg = Release2017|x64
-		{4E089540-E5C0-45D9-BB33-3CBA0E4373B5}.Release2018|Any CPU.ActiveCfg = Release2018|x64
-		{4E089540-E5C0-45D9-BB33-3CBA0E4373B5}.Release2019|Any CPU.ActiveCfg = Release2019|x64
-		{4E089540-E5C0-45D9-BB33-3CBA0E4373B5}.Release2020|Any CPU.ActiveCfg = Release2020|x64
-		{4E089540-E5C0-45D9-BB33-3CBA0E4373B5}.Release2021|Any CPU.ActiveCfg = Release2021|x64
+		{16D0AF26-B9A2-4C97-A821-41CBD93D9B73}.Debug2017|Any CPU.ActiveCfg = Debug2017|x64
+		{16D0AF26-B9A2-4C97-A821-41CBD93D9B73}.Debug2017|Any CPU.Build.0 = Debug2017|x64
+		{16D0AF26-B9A2-4C97-A821-41CBD93D9B73}.Debug2018|Any CPU.ActiveCfg = Debug2018|x64
+		{16D0AF26-B9A2-4C97-A821-41CBD93D9B73}.Debug2019|Any CPU.ActiveCfg = Debug2019|x64
+		{16D0AF26-B9A2-4C97-A821-41CBD93D9B73}.Debug2020|Any CPU.ActiveCfg = Debug2020|x64
+		{16D0AF26-B9A2-4C97-A821-41CBD93D9B73}.Debug2021|Any CPU.ActiveCfg = Debug2021|x64
+		{16D0AF26-B9A2-4C97-A821-41CBD93D9B73}.Release2017|Any CPU.ActiveCfg = Release2017|x64
+		{16D0AF26-B9A2-4C97-A821-41CBD93D9B73}.Release2018|Any CPU.ActiveCfg = Release2018|x64
+		{16D0AF26-B9A2-4C97-A821-41CBD93D9B73}.Release2019|Any CPU.ActiveCfg = Release2019|x64
+		{16D0AF26-B9A2-4C97-A821-41CBD93D9B73}.Release2020|Any CPU.ActiveCfg = Release2020|x64
+		{16D0AF26-B9A2-4C97-A821-41CBD93D9B73}.Release2021|Any CPU.ActiveCfg = Release2021|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

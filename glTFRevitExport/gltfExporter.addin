@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>GltfExport application addin</Name>
+    <Assembly>gltfExporter/Argyle.glTFRevitExport.dll</Assembly>
+    <AddInId>20210506-F742-4951-8576-C261D199310A</AddInId>
+    <FullClassName>io.odysz.hello.revit.lession6.ExApp</FullClassName>
+    <VendorId>odysz.github.io</VendorId>
+    <VendorDescription>Odys Zhou, IO, io.odysz.hello</VendorDescription>
+  </AddIn>
+</RevitAddIns>

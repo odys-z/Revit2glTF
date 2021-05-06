@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package >
+  <metadata>
+    <id>GltfExport.RevitPlugin</id>
+    <version>0.1.0</version>
+    <title>Gltf Exporter for Revit</title>
+    <authors>Argyle</authors>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <projectUrl>http://github.com/odys-z/Revit2glTF/</projectUrl>
+    <iconUrl>https://odys-z.github.io/css/odysz.png</iconUrl>
+    <description>A Revit 2017 plugin for exporting gltf and controlling rendering on x-visual.
+      Revit is the propertye of Autodesk. This plugin is based on opensource and only tested in Revit 2017 readonly mode.
+    </description>
+    <releaseNotes>Snapshot for depending by Anclient</releaseNotes>
+    <copyright>Odys Zhou 2022</copyright>
+    <tags>BIM-Export, GLTF</tags>
+  </metadata>
+</package>

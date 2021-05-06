@@ -93,6 +93,8 @@ StyleCopReport.xml
 *.svclog
 *.scc
 
+build
+
 # Chutzpah Test files
 _Chutzpah*
 
@@ -311,6 +313,7 @@ __pycache__/
 
 # Cake - Uncomment if you are using it
 # tools/**
+nuget.exe
 # !tools/packages.config
 
 # Tabs Studio

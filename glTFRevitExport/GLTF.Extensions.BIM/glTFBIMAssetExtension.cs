@@ -36,7 +36,11 @@ namespace GLTFRevitExport.GLTF.Extensions.BIM {
         private static string GetAppName(Document doc) {
             var app = doc.Application;
             var hostName = app.VersionName;
+#if REVIT2017
+            hostName = hostName.Replace(app.VersionNumber, "");
+#else
             hostName = hostName.Replace(app.VersionNumber, app.SubVersionNumber);
+#endif
             return $"{hostName} {app.VersionBuild}";
         }
 
