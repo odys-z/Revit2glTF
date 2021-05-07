@@ -4,7 +4,7 @@
     <Name>GltfExport application addin</Name>
     <Assembly>gltfExporter/Argyle.glTFRevitExport.dll</Assembly>
     <AddInId>20210506-F742-4951-8576-C261D199310A</AddInId>
-    <FullClassName>GLTFRevitExport.GLTFExporter</FullClassName>
+    <FullClassName>GLTFRevitExport.TestGltfExporter</FullClassName>
     <VendorId>odysz.github.io</VendorId>
     <VendorDescription>Independenct Developer</VendorDescription>
   </AddIn>
