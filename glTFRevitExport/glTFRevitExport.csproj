@@ -35,7 +35,7 @@
     <RevitVersion>2021</RevitVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug2017|x64'">
-    <OutputPath>build\Debug2017\</OutputPath>
+    <OutputPath>bin\Debug\</OutputPath>
     <DebugSymbols>true</DebugSymbols>
     <Optimize>false</Optimize>
     <DefineConstants>TRACE;DEBUG;REVIT2017</DefineConstants>
@@ -234,14 +234,18 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="gltfExporter.addin" />
+    <None Include="gltfExporter.nuspec" />
+    <None Include="glTFRevitExport.nuspec" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="assets\McCulloughRT.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy "$(ProjectDir)gltfExporter.addin" "$(ALLUSERSPROFILE)/Autodesk/Revit/Addins/2017"
-xcopy /y "$(ProjectDir)assets" "$(ALLUSERSPROFILE)/Autodesk/Revit/Addins/2017/gltfExporter"
-xcopy /y "$(ProjectDir)build\Debug2017\Argyle.*" "$(ALLUSERSPROFILE)/Autodesk/Revit/Addins/2017/gltfExporter"
-xcopy /y "$(ProjectDir)build\Debug2017\Newtonsoft.Json.dll" "$(ALLUSERSPROFILE)/Autodesk/Revit/Addins/2017/gltfExporter"
-</PostBuildEvent>
+xcopy /y "$(ProjectDir)bin\Debug\Argyle.*" "$(ALLUSERSPROFILE)/Autodesk/Revit/Addins/2017/gltfExporter"
+xcopy /y "$(ProjectDir)bin\Debug\Newtonsoft.Json.dll" "$(ALLUSERSPROFILE)/Autodesk/Revit/Addins/2017/gltfExporter"
+xcopy /y "$(ProjectDir)assets\*" "$(ALLUSERSPROFILE)/Autodesk/Revit/Addins/2017/gltfExporter"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
