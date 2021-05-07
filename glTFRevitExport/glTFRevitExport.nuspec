@@ -8,7 +8,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <license type="expression">MIT</license>
     <projectUrl>http://github.com/odys-z/Revit2glTF/</projectUrl>
-    <iconUrl>https://odys-z.github.io/css/odysz.png</iconUrl>
+    <icon>assets/odysz.png</icon>
     <description>A Revit 2017 plugin for exporting gltf and controlling rendering on x-visual.
       Revit is the propertye of Autodesk. This plugin is based on opensource and only tested in Revit 2017 readonly mode.
       Gltf Exporter for Revit is based on Argylebuild's github open source project, Revit2glTF, licensed unknow till May 7, 2021.
@@ -16,5 +16,14 @@
     <releaseNotes>Snapshot for depending by Anclient example.</releaseNotes>
     <copyright>Odys Zhou 2022</copyright>
     <tags>BIM-Export, GLTF</tags>
+    <dependencies>
+      <group targetFramework=".NETFramework4.0" />
+    </dependencies>
   </metadata>
+  <files>
+    <file src="bin\Debug\Argyle*" target="lib\net40\" />
+    <file src="bin\Debug\Newtonsoft*" target="lib\net40\" />
+    <file src="assets\odysz.png" target="assets\" />
+    <file src="assets\McCulloughRT.png" target="assets\" />
+  </files>
 </package>

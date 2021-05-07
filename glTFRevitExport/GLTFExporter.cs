@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Windows;
 
 using Autodesk.Revit.DB;
 
 using GLTFRevitExport.Properties;
 using GLTFRevitExport.GLTF.Schema;
 using GLTFRevitExport.GLTF.Package;
-using GLTFRevitExport.ExportContext;
 
 namespace GLTFRevitExport {
     /// <summary>
