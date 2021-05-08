@@ -197,8 +197,12 @@ namespace glTFRevitExport
             }
 
             // Write the *.gltf file
+            string pgltf = Path.Combine(_directory, _filename + ".gltf");
             string serializedModel = JsonConvert.SerializeObject(container.glTF, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-            File.WriteAllText(Path.Combine(_directory, _filename + ".gltf"), serializedModel);
+            File.WriteAllText(pgltf, serializedModel);
+
+            var mglb = SharpGLTF.Schema2.ModelRoot.Load(pgltf);
+            mglb.SaveGLB(Path.Combine(_directory, _filename + ".glb"));
         }
 
         /// <summary>
