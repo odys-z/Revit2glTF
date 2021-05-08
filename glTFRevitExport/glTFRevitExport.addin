@@ -9,6 +9,7 @@
     <VendorId>_RTM</VendorId>
     <VendorDescription>Ryan T. McCullough</VendorDescription>
   </AddIn>
+  <!--
   <AddIn Type="Application">
     <Name>Application glTFRevitExport</Name>
     <Assembly>gltfExporter/glTFRevitExport.dll</Assembly>
@@ -17,4 +18,5 @@
     <VendorId>_RTM</VendorId>
     <VendorDescription>Ryan T. McCullough</VendorDescription>
   </AddIn>
+  -->
 </RevitAddIns>
