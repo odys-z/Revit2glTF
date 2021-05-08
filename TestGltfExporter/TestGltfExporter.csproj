@@ -1,12 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net471</TargetFramework>
 
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="GltfExport.RevitPlugin" Version="0.1.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.7.1" />
     <PackageReference Include="MSTest.TestAdapter" Version="2.1.1" />
     <PackageReference Include="MSTest.TestFramework" Version="2.1.1" />
@@ -18,8 +19,17 @@
     <ProjectReference Include="..\glTFRevitExport\glTFRevitExport.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="RevitAPI">
+      <HintPath>..\..\..\..\inst\Revit 2017\RevitAPI.dll</HintPath>
+    </Reference>
+    <Reference Include="RevitAPIUI">
+      <HintPath>..\..\..\..\inst\Revit 2017\RevitAPIUI.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="xcopy /y /i ..\test\res\* bin\Debug\net5.0" />
+    <Exec Command="xcopy /y /i ..\test\res\* bin\Debug\net471&#xD;&#xA;xcopy /y /i ..\test\res\* bin\Debug\net5.0" />
   </Target>
 
 </Project>

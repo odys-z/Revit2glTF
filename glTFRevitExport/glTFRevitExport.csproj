@@ -128,11 +128,13 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="RevitAPI">
-      <HintPath>..\..\..\..\..\Program Files\Autodesk\Revit 2017\RevitAPI.dll</HintPath>
+    <Reference Include="RevitAPI, Version=17.0.0.0, Culture=neutral, processorArchitecture=AMD64">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\inst\Revit 2017\RevitAPI.dll</HintPath>
     </Reference>
-    <Reference Include="RevitAPIUI">
-      <HintPath>..\..\..\..\..\Program Files\Autodesk\Revit 2017\RevitAPIUI.dll</HintPath>
+    <Reference Include="RevitAPIUI, Version=17.0.0.0, Culture=neutral, processorArchitecture=AMD64">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\inst\Revit 2017\RevitAPIUI.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
@@ -193,6 +195,7 @@
   <ItemGroup>
     <Content Include="glTFRevitExport.addin">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
     </Content>
     <EmbeddedResource Include="Embedded Media\small.png" />
     <EmbeddedResource Include="Embedded Media\large.png" />
@@ -201,7 +204,6 @@
     <PackageReference Include="Newtonsoft.Json">
       <Version>12.0.3</Version>
     </PackageReference>
-    <PackageReference Include="Revit_All_Main_Versions_API_x64" Version="$(RevitVersion).0.0" />
     <PackageReference Include="SharpGLTF.Core">
       <Version>1.0.0-alpha0022</Version>
     </PackageReference>
@@ -209,8 +211,10 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy "$(ProjectDir)glTFRevitExport.addin" "$(ALLUSERSPROFILE)/Autodesk/Revit/Addins/2017"
-xcopy /y /i "$(ProjectDir)bin\Debug2017\glTF*" "$(ALLUSERSPROFILE)/Autodesk/Revit/Addins/2017/gltfExporter"
-xcopy /y /i  "$(ProjectDir)bin\Debug2017\Newtonsoft.Json.dll" "$(ALLUSERSPROFILE)/Autodesk/Revit/Addins/2017/gltfExporter"
+copy "$(ProjectDir)bin\Debug2017\SharpGLTF.Core.dll" "$(ALLUSERSPROFILE)/Autodesk/Revit/Addins/2017/gltfExporter"
+copy "$(ProjectDir)bin\Debug2017\Newtonsoft.Json.dll" "$(ALLUSERSPROFILE)/Autodesk/Revit/Addins/2017/gltfExporter"
+xcopy /y /i "$(ProjectDir)bin\Debug2017\System.*.dll" "$(ALLUSERSPROFILE)/Autodesk/Revit/Addins/2017/gltfExporter\"
+xcopy /y /i "$(ProjectDir)bin\Debug2017\glTF*" "$(ALLUSERSPROFILE)/Autodesk/Revit/Addins/2017/gltfExporter\"
 </PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
