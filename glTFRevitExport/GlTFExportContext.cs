@@ -201,6 +201,9 @@ namespace glTFRevitExport
             string serializedModel = JsonConvert.SerializeObject(container.glTF, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
             File.WriteAllText(pgltf, serializedModel);
 
+            // FIXME convert to glb.
+            // problem: can't load file or assembly System.Runtime.CompilerServices.Unsafe v4.0.6
+            // see possible cause here https://stackoverflow.com/a/62769681
             // var mglb = SharpGLTF.Schema2.ModelRoot.Load(pgltf);
             // mglb.SaveGLB(Path.Combine(_directory, _filename + ".glb"));
         }
