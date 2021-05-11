@@ -2,9 +2,9 @@
 <package >
   <metadata>
     <id>GltfExport.RevitPlugin</id>
-    <version>0.1.1</version>
+    <version>0.1.2</version>
     <title>Gltf Exporter for Revit</title>
-    <authors>Argyle, Odys Zhou</authors>
+    <authors>McCulloughRT, Odys Zhou</authors>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <license type="expression">MIT</license>
     <projectUrl>http://github.com/odys-z/Revit2glTF/</projectUrl>
@@ -21,8 +21,9 @@
     </dependencies>
   </metadata>
   <files>
-    <file src="bin\Debug\Argyle*" target="lib\net40\" />
-    <file src="bin\Debug\Newtonsoft*" target="lib\net40\" />
+    <file src="bin\Debug2017\glTF*" target="lib\net40\" />
+    <file src="bin\Debug2017\Newtonsoft*" target="lib\net40\" />
+    <file src="bin\Debug2017\sharpGLTF*" target="lib\net40\" />
     <file src="assets\odysz.png" target="assets\" />
     <file src="assets\McCulloughRT.png" target="assets\" />
   </files>
