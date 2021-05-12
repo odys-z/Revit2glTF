@@ -2,28 +2,29 @@
 <package >
   <metadata>
     <id>GltfExport.RevitPlugin</id>
-    <version>0.1.1</version>
+    <version>0.1.5</version>
     <title>Gltf Exporter for Revit</title>
-    <authors>Argyle, Odys Zhou</authors>
+    <authors>McCulloughRT, Odys Zhou</authors>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <license type="expression">MIT</license>
     <projectUrl>http://github.com/odys-z/Revit2glTF/</projectUrl>
     <icon>assets/odysz.png</icon>
     <description>A Revit 2017 plugin for exporting gltf and controlling rendering on x-visual.
       Revit is the propertye of Autodesk. This plugin is based on opensource and only tested in Revit 2017 readonly mode.
-      Gltf Exporter for Revit is based on Argylebuild's github open source project, Revit2glTF, licensed unknow till May 7, 2021.
+      Gltf Exporter for Revit is based on McCulloughRT &amp; Argylebuild's github open source project, Revit2glTF, licensed unknow till May 7, 2021.
     </description>
     <releaseNotes>Snapshot for depending by Anclient example.</releaseNotes>
     <copyright>Odys Zhou 2022</copyright>
-    <tags>BIM-Export, GLTF</tags>
+    <tags>BIM-Export, GLTF, Revit Plugin</tags>
     <dependencies>
-      <group targetFramework=".NETFramework4.0" />
+      <group targetFramework=".NETFramework4.7.1" >
+        <dependency id="Newtonsoft.Json" version="13.0.1" />
+      </group>
     </dependencies>
   </metadata>
   <files>
-    <file src="bin\Debug\Argyle*" target="lib\net40\" />
-    <file src="bin\Debug\Newtonsoft*" target="lib\net40\" />
+    <file src="bin\Debug\gl*" target="lib\net471" />
     <file src="assets\odysz.png" target="assets\" />
-    <file src="assets\McCulloughRT.png" target="assets\" />
+    <file src="ir.ico" target="assets\" />
   </files>
 </package>

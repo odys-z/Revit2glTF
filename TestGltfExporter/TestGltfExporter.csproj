@@ -4,6 +4,8 @@
     <TargetFramework>net471</TargetFramework>
 
     <IsPackable>false</IsPackable>
+
+    <ApplicationIcon>ir.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

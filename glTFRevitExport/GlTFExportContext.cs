@@ -5,9 +5,6 @@ using System.IO;
 using Autodesk.Revit.DB;
 using Newtonsoft.Json;
 using System.Diagnostics;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace glTFRevitExport
 {
