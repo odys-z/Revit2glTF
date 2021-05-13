@@ -41,8 +41,8 @@ namespace glTFRevitExport
             }
 
             SaveFileDialog fileDialog = new SaveFileDialog();
-            fileDialog.FileName = "NewProject"; // default file name
-            fileDialog.DefaultExt = ".gltf"; // default file extension
+            fileDialog.FileName = "xv-import"; // default file name
+            fileDialog.DefaultExt = ".gltf";   // default file extension
 
             bool? dialogResult = fileDialog.ShowDialog();
             if (dialogResult == true)

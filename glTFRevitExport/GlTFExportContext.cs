@@ -5,6 +5,7 @@ using System.IO;
 using Autodesk.Revit.DB;
 using Newtonsoft.Json;
 using System.Diagnostics;
+using System.Windows;
 
 namespace glTFRevitExport
 {
@@ -195,10 +196,17 @@ namespace glTFRevitExport
                 }
             }
 
-            // Write the *.gltf file
-            string pgltf = Path.Combine(_directory, _filename + ".gltf");
-            string serializedModel = JsonConvert.SerializeObject(gltfContainer.glTF, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-            File.WriteAllText(pgltf, serializedModel);
+            try
+            {
+                // Write the *.gltf file
+                string pgltf = Path.Combine(_directory, _filename + ".gltf");
+                string serializedModel = JsonConvert.SerializeObject(gltfContainer.glTF, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+                File.WriteAllText(pgltf, serializedModel);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.GetType().Name + "\n" + ex.Message);
+            }
 
             // FIXME convert to glb.
             // problem: can't load file or assembly System.Runtime.CompilerServices.Unsafe v4.0.6
