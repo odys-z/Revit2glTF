@@ -9,6 +9,8 @@ namespace glTFRevitExport
     [Transaction(TransactionMode.Manual)]
     public class Command : IExternalCommand
     {
+        public glTFExportContext expContx { get; protected set; }
+
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
             return Execute(commandData);
@@ -48,13 +50,13 @@ namespace glTFRevitExport
                 string filename = fileDialog.FileName;
                 string directory = Path.GetDirectoryName(filename) + "\\";
 
-                ExportView3D(view, filename, directory);
+                expContx = ExportView3D(view, filename, directory);
             }
 
             return Result.Succeeded;
         }
 
-        public void ExportView3D(View3D view3d, string filename, string directory)
+        public glTFExportContext ExportView3D(View3D view3d, string filename, string directory)
         {
             Document doc = view3d.Document;
 
@@ -65,6 +67,8 @@ namespace glTFRevitExport
 
             exporter.ShouldStopOnError = true;
             exporter.Export(view3d);
+
+            return ctx.gltfContainer;
         }
  
     }

@@ -49,6 +49,8 @@ namespace glTFRevitExport
 
         private GLTFManager manager = new GLTFManager();
         private Stack<Document> documentStack = new Stack<Document>();
+        public glTFContainer gltfContainer { get; protected set; }
+
         private Document _doc
         {
             get
@@ -87,7 +89,7 @@ namespace glTFRevitExport
         {
             Debug.WriteLine("Finishing...");
 
-            glTFContainer container = manager.Finish();
+            gltfContainer = manager.Finish();
 
             if (_cfgs.IncludeNonStdElements) {
                 // TODO: [RM] Standardize what non glTF spec elements will go into
@@ -120,8 +122,8 @@ namespace glTFRevitExport
                     gridNode.name = g.Name;
                     gridNode.extras = xtras;
 
-                container.glTF.nodes.Add(gridNode);
-                container.glTF.nodes[0].children.Add(container.glTF.nodes.Count - 1);
+                gltfContainer.glTF.nodes.Add(gridNode);
+                gltfContainer.glTF.nodes[0].children.Add(gltfContainer.glTF.nodes.Count - 1);
                 }
             }
 
@@ -129,7 +131,7 @@ namespace glTFRevitExport
             {
                 int bytePosition = 0;
                 int currentBuffer = 0;
-                foreach (var view in container.glTF.bufferViews)
+                foreach (var view in gltfContainer.glTF.bufferViews)
                 {
                     if (view.buffer == 0)
                     {
@@ -148,14 +150,14 @@ namespace glTFRevitExport
                 glTFBuffer buffer = new glTFBuffer();
                 buffer.uri = _filename + ".bin";
                 buffer.byteLength = bytePosition;
-                container.glTF.buffers.Clear();
-                container.glTF.buffers.Add(buffer);
+                gltfContainer.glTF.buffers.Clear();
+                gltfContainer.glTF.buffers.Add(buffer);
 
                 using (FileStream f = File.Create(Path.Combine(_directory, buffer.uri)))
                 {
                     using (BinaryWriter writer = new BinaryWriter(f))
                     {
-                        foreach (var bin in container.binaries)
+                        foreach (var bin in gltfContainer.binaries)
                         {
                             foreach (var coord in bin.contents.vertexBuffer)
                             {
@@ -173,7 +175,7 @@ namespace glTFRevitExport
             else
             {
                 // Write the *.bin files
-                foreach (var bin in container.binaries)
+                foreach (var bin in gltfContainer.binaries)
                 {
                     using (FileStream f = File.Create(Path.Combine(_directory, bin.name)))
                     {
@@ -195,7 +197,7 @@ namespace glTFRevitExport
 
             // Write the *.gltf file
             string pgltf = Path.Combine(_directory, _filename + ".gltf");
-            string serializedModel = JsonConvert.SerializeObject(container.glTF, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+            string serializedModel = JsonConvert.SerializeObject(gltfContainer.glTF, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
             File.WriteAllText(pgltf, serializedModel);
 
             // FIXME convert to glb.
