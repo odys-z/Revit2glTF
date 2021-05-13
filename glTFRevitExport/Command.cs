@@ -9,7 +9,7 @@ namespace glTFRevitExport
     [Transaction(TransactionMode.Manual)]
     public class Command : IExternalCommand
     {
-        public glTFExportContext expContx { get; protected set; }
+        public glTF resultGltf { get; protected set; }
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
@@ -49,14 +49,14 @@ namespace glTFRevitExport
             {
                 string filename = fileDialog.FileName;
                 string directory = Path.GetDirectoryName(filename) + "\\";
-
-                expContx = ExportView3D(view, filename, directory);
+                glTFContainer glConter = ExportView3D(view, filename, directory);
+                resultGltf = glConter.glTF;
             }
 
             return Result.Succeeded;
         }
 
-        public glTFExportContext ExportView3D(View3D view3d, string filename, string directory)
+        public glTFContainer ExportView3D(View3D view3d, string filename, string directory)
         {
             Document doc = view3d.Document;
 
