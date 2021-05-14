@@ -10,6 +10,7 @@ namespace glTFRevitExport
     public class Command : IExternalCommand
     {
         public glTF resultGltf { get; protected set; }
+        public string filename { get; protected set; }
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
@@ -47,7 +48,7 @@ namespace glTFRevitExport
             bool? dialogResult = fileDialog.ShowDialog();
             if (dialogResult == true)
             {
-                string filename = fileDialog.FileName;
+                filename = fileDialog.FileName;
                 string directory = Path.GetDirectoryName(filename) + "\\";
                 glTFContainer glConter = ExportView3D(view, filename, directory);
                 resultGltf = glConter.glTF;

@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>GltfExport.RevitPlugin</id>
-    <version>0.1.9</version>
+    <version>0.1.10</version>
     <title>Gltf Exporter for Revit</title>
     <authors>McCulloughRT, Odys Zhou</authors>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
